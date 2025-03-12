@@ -73,17 +73,22 @@ class LoginSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         email=attrs.get('email')
         password = attrs.get('password')
-        email1 = User.objects.get(email=email).email
-        password_saved = User.objects.get(email=email).password
+        if not email or not password:
+            raise serializers.ValidationError("Email and password are required.")
+        try:
+            email1 = User.objects.get(email=email).email
+            password_saved = User.objects.get(email=email).password
+        except:
+                raise serializers.ValidationError("No user found with this email.")
         user=authenticate(email=email,password=password)
         if not user:
             if email1  and  check_password(password, password_saved):
-                raise AuthenticationFailed('Verifier your mail -_*')
-            raise AuthenticationFailed('ohoho Invalid credentials try again -_-')
+                raise AuthenticationFailed('Email is not verified.')
+            raise AuthenticationFailed('Invalid email or password.')
         if user.is_2fa_enabled:
             temp_token = str(uuid.uuid4()) 
             cache.set(temp_token, user.id, timeout=10000)
-            raise AuthenticationFailed( {"detail": "2FA required", "temp_token": temp_token})
+            raise AuthenticationFailed({"detail": "2FA required", "temp_token": temp_token})
         user_tokens = user.tokens()
 
         return {

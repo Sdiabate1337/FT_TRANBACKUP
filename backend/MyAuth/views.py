@@ -59,25 +59,40 @@ class RegisterUserView(GenericAPIView):
                         } ,
                         status=status.HTTP_400_BAD_REQUEST)
 class VerifyUserEmail(GenericAPIView):
-    serializer_class=UserRegisterSerializer
     def post(self,request):
+        email=request.data.get('email')
         otpcode=request.data.get('otp')
+        if not email or not otpcode:
+            return Response({
+                "error": "Missing email or verification code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             user_code_obj = OneTimePassword.objects.get(code=otpcode)
             if   not user_code_obj.user.is_verified:
                 if  str(user_code_obj.code) == str(otpcode):
-                    user_code_obj.user.is_verified = True
-                    user_code_obj.user.is_active = True
-                    user_code_obj.user.save()
-                    return Response({
-                        'message':'account email verified successfully'
-                    },status=status.HTTP_200_OK)
+                    if str(user_code_obj.user.email) == str(email):
+                        user_code_obj.user.is_verified = True
+                        user_code_obj.user.is_active = True
+                        user_code_obj.user.save()
+                        return Response({
+                            'message':'account email verified successfully',
+                            "user": {
+                                        "id": user_code_obj.user.id,
+                                        "email": user_code_obj.user.email,
+                                        "is_verified": user_code_obj.user.is_verified
+                                    }
+                        },status=status.HTTP_200_OK)
+                    else:
+                        return Response({  "error": "Invalid verification code"
+                            }, status=status.HTTP_404_NOT_FOUND)
             return Response(
                     {
-                        'message':'code is invalid user already verified'
-                    },status=status.HTTP_204_NO_CONTENT)
+                        "error": "user already verified"
+                    },status=status.HTTP_409_CONFLICT)
         except OneTimePassword.DoesNotExist:
-            return Response({'message':'1 passcode not provided'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({  "error": "Invalid verification code"
+                            }, status=status.HTTP_404_NOT_FOUND)
 
 class VerifyView(GenericAPIView):
     serializer_class = OTPSerializer
@@ -95,17 +110,76 @@ class VerifyView(GenericAPIView):
             }, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework import serializers
 
 class LoginUserView(GenericAPIView):
-    serializer_class = LoginSerializer
-
     def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            print(serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer_class = LoginSerializer(data=request.data)
+
+        try:
+            serializer_class.is_valid(raise_exception=True)
+        except AuthenticationFailed as e:
+            if "2FA required" in str(e.detail):
+                return Response(
+                        {
+                            "message": "2FA required",
+                            "temp_token": e.detail["temp_token"]
+                        },
+                        status=status.HTTP_202_ACCEPTED
+                    )
+            elif "Email is not verified" in str(e.detail):
+                    return Response(
+                        {
+                            "error": "Forbidden",
+                            "details": "Email is not verified."
+                        },
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            elif "Invalid email or password" in str(e.detail):
+                    return Response(
+                        {
+                            "error": "Unauthorized",
+                            "details": "Invalid email or password."
+                        },
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+            else:
+                    return Response(
+                        {
+                            "error": "Unauthorized",
+                            "details": str(e.detail)
+                        },
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+        except serializers.ValidationError as e:
+                if "Email and password are required" in str(e.detail):
+                    return Response(
+                        {
+                            "error": "Invalid input",
+                            "details": "Email and password are required."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                elif "No user found with this email" in str(e.detail):
+                    return Response(
+                        {
+                            "error": "Not Found",
+                            "details": "No user found with this email."
+                        },
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                else:
+                    return Response(
+                        {
+                            "error": "Invalid input",
+                            "details": str(e.detail)
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        return Response(serializer_class.validated_data, status=status.HTTP_200_OK)
 
 class TestAuthenticationView(GenericAPIView):
     permission_classes = [IsAuthenticated]
