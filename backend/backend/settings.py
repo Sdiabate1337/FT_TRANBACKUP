@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_otp.plugins.otp_totp',
     # my apps
-    'accounts',
+    'MyAuth',
     'channels',
     'onlineStatus'
 
@@ -121,7 +121,7 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL="accounts.User"
+AUTH_USER_MODEL="MyAuth.User"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(

@@ -7,8 +7,8 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.urls import path
-from accounts.middleware import JWTAuthMiddleware
-from accounts.consumers import OnlineStatusConsumer
+from MyAuth.middleware import JWTAuthMiddleware
+from MyAuth.consumers import OnlineStatusConsumer
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
