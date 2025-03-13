@@ -18,11 +18,14 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator# type: ignore
 from django.core.cache import cache
 from urllib.parse import quote
 
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework import serializers
 from .utils import generate_otp_secret, generate_otp_uri,verify_otp ,generate_qr_code
 
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
+from rest_framework.renderers import JSONRenderer # type: ignore
 
 from django.shortcuts import redirect
 from rest_framework.permissions import AllowAny  # type: ignore # Important for OAuth redirect
@@ -116,8 +119,6 @@ class VerifyView(GenericAPIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework import serializers
 
 class LoginUserView(GenericAPIView):
     def post(self, request):
@@ -198,21 +199,21 @@ class Enable2FAView(GenericAPIView):
             "message": "2FA is already enabled"
             },status=status.HTTP_200_OK)
             
-        if str(msg) == str("NO"):
-            return Response({"message": "Two-factor authentication is not being enabled successfully."}, status=status.HTTP_200_OK)
-        user.otp_secret = generate_otp_secret()
-        user.is_2fa_enabled = True
-        user.save()
+        if str(msg) == str("YES"):
+            user.otp_secret = generate_otp_secret()
+            user.is_2fa_enabled = True
+            user.save()
 
-        otp_uri = generate_otp_uri(user)
-        qr_code = generate_qr_code(otp_uri)
-        print(qr_code)
+            otp_uri = generate_otp_uri(user)
+            qr_code = generate_qr_code(otp_uri)
+            print(qr_code)
 
-        return Response({
-            "message": "2FA enabled",
-            "otp_uri": otp_uri,
-            "qr_code_url": qr_code,
-        }, status=status.HTTP_200_OK)
+            return Response({
+                "message": "2FA enabled",
+                "otp_uri": otp_uri,
+                "qr_code_url": qr_code,
+            }, status=status.HTTP_200_OK)
+        return Response({"message": "Two-factor authentication is not being enabled successfully."}, status=status.HTTP_200_OK)
 
 class Disable2FAView(GenericAPIView):
     def post(self, request):
@@ -220,18 +221,17 @@ class Disable2FAView(GenericAPIView):
         msg = request.data.get("confirmation")
         if not user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
-        if str(msg) == str("NO"):
-            return Response({"message": "2FA is not being disabled successfully."}, status=status.HTTP_200_OK)
         if user.is_2fa_enabled == False:
             return Response({
-            "message": "2FA is already disabled"
-            },status=status.HTTP_200_OK)
-        user.is_2fa_enabled = False
-        user.save()
-        return Response({
-            "message": "2FA  disable",
-        }, status=status.HTTP_200_OK)
-
+                "message": "2FA is already disabled"
+                },status=status.HTTP_200_OK)
+        if str(msg) == str("YES"):
+            user.is_2fa_enabled = False
+            user.save()
+            return Response({
+                "message": "2FA  disable",
+            }, status=status.HTTP_200_OK)
+        return Response({"message": "2FA is not being disabled successfully."}, status=status.HTTP_200_OK)
 
 class TestAuthenticationView(GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -242,61 +242,136 @@ class TestAuthenticationView(GenericAPIView):
         }
         return Response(data, status=status.HTTP_200_OK)
 
-class  PasswordResetRequestView(GenericAPIView):
-    serializer_class=PasswordResetRequestSerializer
-    def post(self, request):
-        serializer= self.serializer_class(data=request.data, context={'request':request})
-        serializer.is_valid(raise_exception=True)
-        return Response({'message':"a link has been sent to  your email to reset your password"},status=status.HTTP_200_OK)
-
-class PasswordResetConfirm(GenericAPIView):
-    def get(self,request,uidb64,token):
-        try:
-            user_id=smart_str(urlsafe_base64_decode(uidb64))
-            user=User.objects.get(id=user_id)
-            if not PasswordResetTokenGenerator().check_token(user,token):
-                return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-            return Response({'success':True,'message':'credentials is valid','uidb64':uidb64,'token':token},status=status.HTTP_200_OK)
-        except DjangoUnicodeDecodeError:
-            return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-    
-
-class SetNewPassword(GenericAPIView):
-    serializer_class=SetNewPasswordSerializer
-    def patch(self,request):
-        serializer=self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response({'message':'password reset successful'},status=status.HTTP_200_OK)
-    
-
-class LogoutUserView(GenericAPIView):
-    serializer_class=LogoutUserSerializer
-    permission_LogoutUserViewclasses=[IsAuthenticated]
 
 
-    def post(self,request):
-        serializer=self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class debugView(GenericAPIView):
-    def get(self,request):
-        user = request.user
-        print(user)
-        print(request)
-        if (User.is_authenticated):
-            print (True)
-        else:
-            print(False)
-        return Response({"hello":"hello"},status=status.HTTP_200_OK)
+# class debugView(GenericAPIView):
+#     def get(self,request):
+#         user = request.user
+#         print(user)
+#         print(request)
+#         if (User.is_authenticated):
+#             print (True)
+#         else:
+#             print(False)
+#         return Response({"hello":"hello"},status=status.HTTP_200_OK)
 class   _42Redirect(GenericAPIView):
 
     def get(self ,request):
         url = f"https://api.intra.42.fr/oauth/authorize?client_id={settings.API42_UID}&redirect_uri={settings.API42_REDIRECT_URI}&response_type=code&scope=public"
         return redirect(url)
     
-from rest_framework.renderers import JSONRenderer # type: ignore
+
+# from rest_framework.views import APIView
+# import logging
+
+# logger = logging.getLogger(__name__)
+# class CollectAuthorizeCode(APIView):
+#     permission_classes = [AllowAny]
+#     renderer_classes = [JSONRenderer]
+#     # Constants
+#     TOKEN_URL = "https://api.intra.42.fr/oauth/token"
+#     USER_URL = "https://api.intra.42.fr/v2/me"
+
+#     def get(self, request):
+#         """
+#         Handle the OAuth2 authorization code flow.
+#         """
+#         code = request.GET.get("code")
+#         if not code:
+#             logger.error("No authorization code provided")
+#             return Response({"error": "No authorization code provided"}, status=400)
+
+#         # Fetch access token
+#         access_token, refresh_token = self.fetch_access_token(code)
+#         if not access_token:
+#             return Response({"error": "Failed to fetch access token"}, status=400)
+
+#         # Fetch user data
+#         user_data = self.fetch_user_data(access_token)
+#         if not user_data:
+#             return Response({"error": "Failed to fetch user data"}, status=400)
+
+#         # Create or retrieve user
+#         user = self.get_or_create_user(user_data)
+#         if not user:
+#             return Response({"error": "Failed to create or retrieve user"}, status=400)
+
+#         # Handle 2FA if enabled
+#         if user.is_2fa_enabled:
+#             temp_token = str(uuid.uuid4())
+#             cache.set(temp_token, user.id, timeout=10000)
+#             return Response(
+#                 {"detail": "2FA required", "temp_token": temp_token}, status=401
+#             )
+
+#         # Return tokens
+#         return Response(
+#             {"access_token": access_token, "refresh_token": refresh_token}, status=200
+#         )
+
+#     def fetch_access_token(self, code):
+#         """
+#         Fetch the access token using the authorization code.
+#         """
+#         data = {
+#             "grant_type": "authorization_code",
+#             "client_id": settings.API42_UID,
+#             "client_secret": settings.API42_SECRET,
+#             "code": code,
+#             "redirect_uri": settings.API42_REDIRECT_URI,
+#         }
+#         headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+#         try:
+#             response = requests.post(self.TOKEN_URL, data=data, headers=headers)
+#             response.raise_for_status()
+#             access_token = response.json().get("access_token")
+#             refresh_token = response.json().get("refresh_token")
+#             return access_token, refresh_token
+#         except requests.exceptions.RequestException as e:
+#             logger.error(f"Failed to fetch access token: {e}")
+#             return None, None
+
+#     def fetch_user_data(self, access_token):
+#         """
+#         Fetch user data using the access token.
+#         """
+#         headers = {"Authorization": f"Bearer {access_token}"}
+#         try:
+#             response = requests.get(self.USER_URL, headers=headers)
+#             response.raise_for_status()
+#             return response.json()
+#         except requests.exceptions.RequestException as e:
+#             logger.error(f"Failed to fetch user data: {e}")
+#             return None
+
+#     def get_or_create_user(self, user_data):
+#         """
+#         Retrieve or create a user based on the provided user data.
+#         """
+#         email = user_data.get("email")
+#         if not email:
+#             logger.error("Email not found in user data")
+#             return None
+
+#         try:
+#             user, created = User.objects.get_or_create(
+#                 email=email,
+#                 defaults={
+#                     "first_name": user_data.get("first_name"),
+#                     "last_name": user_data.get("last_name"),
+#                 },
+#             )
+#             if created:
+#                 image_url = user_data.get("image")
+#                 if image_url:
+#                     user.download_profile_image_from_url(image_url)
+#                 user.save()
+#                 logger.info(f"Created new user: {user.email}")
+#             return user
+#         except Exception as e:
+#             logger.error(f"Failed to create or retrieve user: {e}")
+#             return None
 
 class CollectAuthorizeCode(GenericAPIView):
     permission_classes = [AllowAny]
@@ -346,26 +421,30 @@ class CollectAuthorizeCode(GenericAPIView):
                 usr1 = User.objects.get(email=email)
             if usr1 is None:
                 user = User.objects.create_user(
-                id = user_data.get("id"),
                 email= user_data.get("email"),
                 first_name = user_data.get("first_name"),
                 last_name = user_data.get("last_name"),
                 )
-                image_url = user_data.get("image")
-                if image_url:
-                    user.download_profile_image_from_url(image_url)
+                image = user_data.get("image")
+                if image and image.get("link"):
+                    user.download_profile_image_from_url(image["link"])
+                # if image_url:
+                #     user.download_profile_image_from_url(image_url)
                 user.save()
                 print(user)
+                return Response({"access_token": access_token,"refresh_token":refresh_token}, status=200)
             else:
                 if usr1.is_2fa_enabled:
                     temp_token = str(uuid.uuid4()) 
                     cache.set(temp_token, usr1.id, timeout=10000)
-                    return Response({"detail": "2FA required", "temp_token": temp_token},status=401)
+                    return Response({
+                        "detail": "2FA required", 
+                        "temp_token": temp_token
+                        },status=401)
                 return Response({"access_token": access_token,"refresh_token":refresh_token}, status=200)
         else:
             print(f"Failed to fetch user data. Status code: {response.status_code}")
             print(f"Error message: {response.text}")
-        return Response({"access_token": access_token,"refresh_token":refresh_token}, status=200)
 
 class DeleteUser(GenericAPIView):
     def post(self ,request):
@@ -729,3 +808,43 @@ class ModelManagementView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# --------- user management ----------------
+# class  PasswordResetRequestView(GenericAPIView):
+#     serializer_class=PasswordResetRequestSerializer
+#     def post(self, request):
+#         serializer= self.serializer_class(data=request.data, context={'request':request})
+#         serializer.is_valid(raise_exception=True)
+#         return Response({'message':"a link has been sent to  your email to reset your password"},status=status.HTTP_200_OK)
+
+# class PasswordResetConfirm(GenericAPIView):
+#     def get(self,request,uidb64,token):
+#         try:
+#             user_id=smart_str(urlsafe_base64_decode(uidb64))
+#             user=User.objects.get(id=user_id)
+#             if not PasswordResetTokenGenerator().check_token(user,token):
+#                 return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
+#             return Response({'success':True,'message':'credentials is valid','uidb64':uidb64,'token':token},status=status.HTTP_200_OK)
+#         except DjangoUnicodeDecodeError:
+#             return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
+    
+
+# class SetNewPassword(GenericAPIView):
+#     serializer_class=SetNewPasswordSerializer
+#     def patch(self,request):
+#         serializer=self.serializer_class(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         return Response({'message':'password reset successful'},status=status.HTTP_200_OK)
+    
+
+# class LogoutUserView(GenericAPIView):
+#     serializer_class=LogoutUserSerializer
+#     permission_LogoutUserViewclasses=[IsAuthenticated]
+
+
+#     def post(self,request):
+#         serializer=self.serializer_class(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
