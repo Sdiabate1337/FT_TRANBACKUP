@@ -37,6 +37,7 @@ class RegisterUserView(GenericAPIView):
         if serializer.is_valid():
             
             user = serializer.save()
+            print("email:" ,user_data['email'] )
             send_code_to_user(user_data['email'],user)
             return Response({
                 'data':user_data,
@@ -105,9 +106,13 @@ class VerifyView(GenericAPIView):
             user =User.objects.get(id=id)
             user_tokens = user.tokens()
             return Response({
-                        'access_token': str(user_tokens['access']), 
-                        'refresh_token': str(user_tokens['refresh'])  
-            }, status=status.HTTP_200_OK)
+                            'id':user.id,
+                            'email':user.email,
+                            'first_name':user.first_name,
+                            'last_name':user.last_name,
+                            'access_token': str(user_tokens.get('access')),
+                            'refresh_token':str(user_tokens.get('refresh'))
+                            }, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -181,6 +186,53 @@ class LoginUserView(GenericAPIView):
 
         return Response(serializer_class.validated_data, status=status.HTTP_200_OK)
 
+
+class Enable2FAView(GenericAPIView):
+    def post(self, request):
+        user = request.user
+        msg = request.data.get("confirmation")
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        if user.is_2fa_enabled:
+            return Response({
+            "message": "2FA is already enabled"
+            },status=status.HTTP_200_OK)
+            
+        if str(msg) == str("NO"):
+            return Response({"message": "Two-factor authentication is not being enabled successfully."}, status=status.HTTP_200_OK)
+        user.otp_secret = generate_otp_secret()
+        user.is_2fa_enabled = True
+        user.save()
+
+        otp_uri = generate_otp_uri(user)
+        qr_code = generate_qr_code(otp_uri)
+        print(qr_code)
+
+        return Response({
+            "message": "2FA enabled",
+            "otp_uri": otp_uri,
+            "qr_code_url": qr_code,
+        }, status=status.HTTP_200_OK)
+
+class Disable2FAView(GenericAPIView):
+    def post(self, request):
+        user = request.user
+        msg = request.data.get("confirmation")
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        if str(msg) == str("NO"):
+            return Response({"message": "2FA is not being disabled successfully."}, status=status.HTTP_200_OK)
+        if user.is_2fa_enabled == False:
+            return Response({
+            "message": "2FA is already disabled"
+            },status=status.HTTP_200_OK)
+        user.is_2fa_enabled = False
+        user.save()
+        return Response({
+            "message": "2FA  disable",
+        }, status=status.HTTP_200_OK)
+
+
 class TestAuthenticationView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -227,26 +279,6 @@ class LogoutUserView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-class Enable2FAView(GenericAPIView):
-    def post(self, request):
-        user = request.user
-        if not user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        user.otp_secret = generate_otp_secret()
-        user.is_2fa_enabled = True
-        user.save()
-
-        otp_uri = generate_otp_uri(user)
-        qr_code = generate_qr_code(otp_uri)
-        print(qr_code)
-
-        return Response({
-            "otp_uri": otp_uri,
-            "qr_code_url": qr_code,
-        }, status=status.HTTP_200_OK)
-        
 
 class debugView(GenericAPIView):
     def get(self,request):
@@ -348,7 +380,7 @@ class DeleteUser(GenericAPIView):
 def testJs(request):
     return render(request,"x.html")
 
-
+### ------------------------------- friends api -------------------------
 
 from rest_framework.views import APIView
 from rest_framework.response import Response

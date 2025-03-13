@@ -6,7 +6,7 @@ from .views import RegisterUserView,Enable2FAView ,debugView,\
         PasswordResetRequestView, SetNewPassword,LogoutUserView,_42Redirect , CollectAuthorizeCode, \
         ModelManagementView,    DeleteUser,testJs,FriendListView ,send_friend_request, \
         ReceiveFriendRequestListView,SentFriendRequestListView,RespondFriendRequestView ,\
-        CancelFriendRequest,RemoveFriendRequest ,UnblockUser,UserInfoView,MyInfo
+        CancelFriendRequest,RemoveFriendRequest ,UnblockUser,UserInfoView,MyInfo,Disable2FAView
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.views import TokenBlacklistView
@@ -27,6 +27,7 @@ urlpatterns = [
     path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('enable2FA/', Enable2FAView.as_view(), name='enable_2FA'),
+    path('Disable2FA/', Disable2FAView.as_view(), name='disable_2FA'),
     path('verify2FA/', VerifyView.as_view(), name='VerifyView_2FA'),
     path('debug/', debugView.as_view(), name='debug'),
     path('Redirect42', _42Redirect.as_view(), name='redirect'),

@@ -46,7 +46,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class OTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6, required=True)
     temp_token = serializers.CharField(required=True)
-
     def validate(self, attrs):
         print("Received data:", attrs) 
         oo = attrs.get("otp")
@@ -56,7 +55,6 @@ class OTPSerializer(serializers.Serializer):
         user = User.objects.get(id=user_id)
         if not verify_otp(user, oo):
             raise serializers.ValidationError({"error": "The OTP is not valid"})   
-        user_tokens = user.tokens()  
         print(type(attrs))
         return attrs
 
@@ -92,8 +90,10 @@ class LoginSerializer(serializers.ModelSerializer):
         user_tokens = user.tokens()
 
         return {
+            'id':user.id,
             'email':user.email,
-            'full_name':user.get_full_name,
+            'first_name':user.first_name,
+            'last_name':user.last_name,
             'access_token': str(user_tokens.get('access')),
             'refresh_token':str(user_tokens.get('refresh'))
         }
