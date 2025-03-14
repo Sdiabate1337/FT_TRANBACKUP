@@ -74,7 +74,9 @@ class LoginSerializer(serializers.ModelSerializer):
         if not email or not password:
             raise serializers.ValidationError("Email and password are required.")
         try:
+            print("email " , email)
             email1 = User.objects.get(email=email).email
+            print("email " , email1)
             password_saved = User.objects.get(email=email).password
         except:
                 raise serializers.ValidationError("No user found with this email.")

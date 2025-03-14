@@ -1,7 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.core.validators import validate_email
 from django.utils.translation import gettext_lazy as _
-
 class UserManager(BaseUserManager):
     def email_validator(self, email):
         """
@@ -29,6 +28,7 @@ class UserManager(BaseUserManager):
             email=email,
             first_name=first_name,
             last_name=last_name,
+            
             **extra_fields
         )
 
@@ -36,7 +36,7 @@ class UserManager(BaseUserManager):
             user.set_password(password)
         else:
             user.set_unusable_password()
-
+        user.username = user.generate_unique_username()
         user.save(using=self._db)
 
         return user

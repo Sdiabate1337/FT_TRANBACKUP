@@ -4,9 +4,7 @@ from django.contrib.auth import views as auth_views
 from .views import RegisterUserView,Enable2FAView ,\
         VerifyUserEmail,LoginUserView, VerifyView, TestAuthenticationView ,\
          _42Redirect , CollectAuthorizeCode, \
-        ModelManagementView,    DeleteUser,testJs,FriendListView ,send_friend_request, \
-        ReceiveFriendRequestListView,SentFriendRequestListView,RespondFriendRequestView ,\
-        CancelFriendRequest,RemoveFriendRequest ,UnblockUser,UserInfoView,MyInfo,Disable2FAView
+        ModelManagementView,    DeleteUser,testJs,Disable2FAView
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.views import TokenBlacklistView
@@ -34,17 +32,9 @@ urlpatterns = [
     path('2OAuth', CollectAuthorizeCode.as_view(), name='redirect11'),
     path('delete', DeleteUser.as_view(),name="delete this mdf") ,
     path('testJS', testJs,name="testJs this mdf"),
-    path('friend-requests/friends', FriendListView.as_view(),name="friends"),
-    path('friend-requests/invite/', send_friend_request.as_view(),name="friends"),
+    #path("user/<int:user_id>/", UserInfoView.as_view(), name="user info"),
     path('manageModel/', ModelManagementView.as_view(),name="manage"),
-    path('friend-requests/receive/', ReceiveFriendRequestListView.as_view(),name="friendRequestReceive"),
-    path('friend-requests/sent/', SentFriendRequestListView.as_view(),name="friendRequestSent"),
-    path('friend-requests/accept/', RespondFriendRequestView.as_view(),name="Respond"),
-    path("api/friends/cancelRequest/<int:request_id>/", CancelFriendRequest.as_view(), name="cancel_friend_request"),
-    path("api/friends/remove/<int:request_id>/", RemoveFriendRequest.as_view(), name="remove_friend_request"),
-    path("api/friends/unblocked/<int:request_id>/", UnblockUser.as_view(), name="unblocked_user"),
-    path("user/<int:user_id>/", UserInfoView.as_view(), name="user info"),
-    path("user/me/", MyInfo.as_view(), name="myInfo"),
+    #path("user/me/", MyInfo.as_view(), name="myInfo"),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
 
 

@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
    # path('',include('MyAuth.urls')),
     path('v1/MyAuth/',include('MyAuth.urls')),
+    path('v1/Friends/',include('friends.urls')),
    # path('friendship/', include('friendship.urls'))
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

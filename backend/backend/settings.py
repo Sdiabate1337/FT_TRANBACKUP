@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     # my apps
     'MyAuth',
+    'friends',
     'channels',
     'onlineStatus'
 

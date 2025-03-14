@@ -7,12 +7,14 @@ from .managers import UserManager
 from django.core.files.temp import NamedTemporaryFile
 import requests
 from django.core.files import File
-
+import random
+import string
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email=models.EmailField(max_length=255,unique=True,verbose_name=_("Email Address"))
-    first_name = models.CharField(max_length=100,verbose_name=_("First Name"))
-    last_name = models.CharField(max_length=100,verbose_name=_("Last Name"))
+    email=models.EmailField(max_length=255,unique=True,verbose_name=("Email Address"))
+    username = models.CharField(max_length=100,verbose_name=("username"),unique=True)
+    first_name = models.CharField(max_length=100,verbose_name=("First Name"))
+    last_name = models.CharField(max_length=100,verbose_name=("Last Name"))
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -58,6 +60,15 @@ class User(AbstractBaseUser, PermissionsMixin):
             return self.profile_image.url
         else:
             return '/static/images/default_profile_image.png' 
+    def generate_unique_username(self,length=8, prefix="userTransc_"):
+        chars = string.ascii_lowercase + string.digits
+
+        while True:
+            random_part = ''.join(random.choices(chars, k=length))
+            username = f"{prefix}{random_part}"
+            
+            if not User.objects.filter(username=username).exists():
+                return username
 class OneTimePassword(models.Model):
     code=models.CharField(unique=True,max_length=6)
     user= models.ForeignKey(User,on_delete=models.CASCADE)
