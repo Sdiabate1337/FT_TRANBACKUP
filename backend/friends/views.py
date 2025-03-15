@@ -21,6 +21,8 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from rest_framework import status
+from django.shortcuts import get_object_or_404
+
 
 User = get_user_model()  
 
@@ -124,7 +126,49 @@ class FriendListView(APIView):
 
         return Response({"friends": friend_data})
 
+class SentFriendRequestListView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
+    def get(self, request):
+        try:
+            user = request.user
+            # Fetch sent friend requests
+            sent_requests = FriendshipRequest.objects.filter(from_user=user)
+
+            # Paginate the queryset
+            paginator = self.pagination_class()
+            paginated_requests = paginator.paginate_queryset(sent_requests, request)
+
+            # If there are no sent requests
+            if not paginated_requests:
+                return Response(
+                    {"message": "No sent friend requests found."},
+                    status=status.HTTP_200_OK
+                )
+
+            # Construct the response data
+            requests_data = [
+                {
+                    "friend_request_id": req.id,
+                    "to_user_id": req.to_user.id,
+                    "username": req.to_user.username,
+                    "first_name": req.to_user.first_name,
+                    "last_name": req.to_user.last_name,
+                    "created": req.created.isoformat(),
+                    "rejected": req.rejected,
+                    "viewed": req.viewed,
+                }
+                for req in paginated_requests
+            ]
+
+            # Return the paginated response
+            return paginator.get_paginated_response(requests_data)
+        except Exception as e:
+            return Response(
+                {"error": f"An error occurred while fetching sent friend requests: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ReceiveFriendRequestListView(APIView):
@@ -171,52 +215,28 @@ class ReceiveFriendRequestListView(APIView):
             )
 
 #list sent request friend 
-class SentFriendRequestListView(APIView):
-    permission_classes = [IsAuthenticated]
-    pagination_class = PageNumberPagination
-
-    def get(self, request):
-        try:
-            user = request.user
-            print(f"User ID: {user.id}")
-            sent_requests = FriendshipRequest.objects.filter(from_user_id=user.id)
-            print(f"Sent Requests: {list(sent_requests)}")
-            paginator = self.pagination_class()
-            paginated_requests = paginator.paginate_queryset(sent_requests, request)
-            print(f"Paginated Requests: {paginated_requests}")
-            if not paginated_requests:
-                return Response(
-                    {"message": "No sent friend requests found."},
-                    status=status.HTTP_200_OK
-                )
-            requests_data = [
-                {
-                    "friend_request_id": req.id,
-                    "to_user_id": req.to_user.id,
-                    "username": req.to_user.username,
-                    "first_name": req.to_user.first_name,
-                    "last_name": req.to_user.last_name,
-                    "created": req.created.isoformat(),
-                }
-                for req in paginated_requests
-            ]
-            return paginator.get_paginated_response(requests_data)
-        except Exception as e:
-            return Response(
-                {"error": "An error occurred while fetching sent friend requests."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-class CancelFriendRequest(APIView):
+class CancelFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, request_id):
         try:
-            friend_request = FriendshipRequest.objects.get(id=request_id, sender=request.user)
-            friend_request.delete()
-            return Response({"message": "Friend request canceled successfully."}, status=status.HTTP_200_OK)
+            friendship_request = FriendshipRequest.objects.get(id=request_id, from_user=request.user)
+            friendship_request.delete()
+
+            return Response(
+                {"message": "Friend request canceled successfully."},
+                status=status.HTTP_200_OK
+            )
         except FriendshipRequest.DoesNotExist:
-            return Response({"error": "Request not found."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Friend request not found or you do not have permission to cancel it."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"An error occurred while canceling the friend request: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class RemoveFriend(APIView):
@@ -224,61 +244,75 @@ class RemoveFriend(APIView):
 
     def delete(self, request, friend_id):
         try:
-            friendship = Friend.objects.filter(
+            try:
+                friend_id = int(friend_id)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid friend ID. Please provide a valid integer."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            friendship = get_object_or_404(
+                Friend,
                 Q(user1=request.user, user2_id=friend_id) | Q(user1_id=friend_id, user2=request.user)
-            ).first()
-            if not friendship:
-                return Response({"error": "Friendship does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+            )
             friendship.delete()
-            return Response({"message": "Friend removed successfully."}, status=status.HTTP_200_OK)
+
+            return Response(
+                {"message": "Friend removed successfully."},
+                status=status.HTTP_200_OK
+            )
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": "An unexpected error occurred while removing the friend."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
+# class UnblockUser(APIView):
+#     permission_classes = [IsAuthenticated]
 
-class UnblockUser(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, user_id):
-        try:
-            blocked_user = Block.objects.filter(blocker=request.user, blocked_id=user_id).first()
-            if not blocked_user:
-                return Response({"error": "User is not blocked."}, status=status.HTTP_400_BAD_REQUEST)
-            blocked_user.delete()
-            return Response({"message": "User unblocked successfully."}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     def delete(self, request, user_id):
+#         try:
+#             blocked_user = Block.objects.filter(blocker=request.user, blocked_id=user_id).first()
+#             if not blocked_user:
+#                 return Response({"error": "User is not blocked."}, status=status.HTTP_400_BAD_REQUEST)
+#             blocked_user.delete()
+#             return Response({"message": "User unblocked successfully."}, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 
-class UserInfoView(APIView):
-    permission_classes = [IsAuthenticated]
+# class UserInfoView(APIView):
+#     permission_classes = [IsAuthenticated]
 
-    def get(self, request, user_id):
+#     def get(self, request, user_id):
         
-        user = User.objects.filter(id=user_id).first()
-        if user:
-            if Block.objects.filter(blocker=user, blocked=self.request.user).exists() or \
-                Block.objects.filter(blocker=self.request.user, blocked=user).exists():
-                raise PermissionDenied("You are blocked by the user")
-            serializer = UserSerializer(user)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#         user = User.objects.filter(id=user_id).first()
+#         if user:
+#             if Block.objects.filter(blocker=user, blocked=self.request.user).exists() or \
+#                 Block.objects.filter(blocker=self.request.user, blocked=user).exists():
+#                 raise PermissionDenied("You are blocked by the user")
+#             serializer = UserSerializer(user)
+#             return Response(serializer.data,status=status.HTTP_200_OK)
+#         else:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-class MyInfo(APIView):
-    permission_classes = [IsAuthenticated]
+# class MyInfo(APIView):
+#     permission_classes = [IsAuthenticated]
     
-    def get(self, request):
-        serializer = UserSerializer(request.user, context={"request": request})
-        return Response(serializer.data)
-class BlockedUsersList(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        blocked_users = User.objects.filter(
-            id__in=Block.objects.filter(blocker=request.user).values_list("blocked", flat=True)
-        ).values("username")  
-        return Response({"blocked_users": list(blocked_users)}, status=status.HTTP_200_OK)
+#     def get(self, request):
+#         serializer = UserSerializer(request.user, context={"request": request})
+#         return Response(serializer.data)
+
+
+# class BlockedUsersList(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         blocked_users = User.objects.filter(
+#             id__in=Block.objects.filter(blocker=request.user).values_list("blocked", flat=True)
+#         ).values("username")  
+#         return Response({"blocked_users": list(blocked_users)}, status=status.HTTP_200_OK)
 
 class RespondFriendRequestView(APIView):
 
