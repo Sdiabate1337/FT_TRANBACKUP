@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
+from rest_framework.pagination import PageNumberPagination
 from friendship.models import FriendshipRequest
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,15 +20,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q
 from django.contrib.auth import get_user_model
-
-
-
-
-
-
+from rest_framework import status
 
 User = get_user_model()  
-
 
 @receiver(post_save, sender=FriendshipRequest)
 def send_friend_request_notification(sender, instance, created, **kwargs):
@@ -43,27 +38,53 @@ def send_friend_request_notification(sender, instance, created, **kwargs):
             }
         )
 
-class send_friend_request(APIView):
+class SendFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self,request):
+
+    def post(self, request):
         from_user = request.user
-        print("request " , request.data)
-        email = request.data.get('email')
-        to_user = User.objects.get(email = email)
-        print("user: " , to_user)
-        if Friend.objects.are_friends(from_user, to_user): 
-            return  Response({"they are all ready friend"})
-        if FriendshipRequest.objects.filter(from_user=from_user, to_user=to_user,  rejected__isnull=True).exists() or \
-            FriendshipRequest.objects.filter(from_user=to_user, to_user=from_user, rejected__isnull=True).exists():
-            return Response({"the invitation already exist"})
-        print(from_user, "   ",to_user)
-        if from_user != to_user:
-            print("im here 111") 
-            friendship_request = FriendshipRequest.objects.create(from_user=from_user, to_user=to_user)
-            friendship_request.save() 
+        to_user_id = request.data.get('to_user_id')
 
-        return  Response({"the invitation sent successfully"})
+        if not to_user_id:
+            return Response(
+                {'error': 'to_user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        try:
+            to_user = User.objects.get(id=to_user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "to_user_id does not exist!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Friend.objects.are_friends(from_user, to_user):
+            return Response(
+                {"error": "You are already friends with this user."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if FriendshipRequest.objects.filter(from_user=from_user, to_user=to_user, rejected__isnull=True).exists() or \
+           FriendshipRequest.objects.filter(from_user=to_user, to_user=from_user, rejected__isnull=True).exists():
+            return Response(
+                {"error": "A friend request already exists."},
+                status=status.HTTP_409_CONFLICT
+            )
+
+        if from_user == to_user:
+            return Response(
+                {"error": "You cannot send a friend request to yourself."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        friendship_request = FriendshipRequest.objects.create(from_user=from_user, to_user=to_user)
+        friendship_request.save()
+
+        return Response(
+            {"message": "The invitation was sent successfully."},
+            status=status.HTTP_201_CREATED
+        )
 
 class FriendListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -104,33 +125,87 @@ class FriendListView(APIView):
         return Response({"friends": friend_data})
 
 
-#list receive friend request
+
+
 class ReceiveFriendRequestListView(APIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
     def get(self, request):
-        user = request.user 
-        receiveRequest = FriendshipRequest.objects.filter(to_user=user)
-        print(f"receive request: {receiveRequest}")
-        request_id  = -1
-        for request in receiveRequest:
-            request_id = request.id
-            print(f"request ID: {request_id}")
-            print(f"receive from: {request.from_user}")
-        return Response({"friends": "nice","Request ID": request_id},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            user = request.user
+            print(user.id)
+            incoming_requests = FriendshipRequest.objects.filter(to_user_id=user.id)
+            print(list(incoming_requests))
+            paginator = self.pagination_class()
+            print("paginator: ",paginator)
+            paginated_requests = paginator.paginate_queryset(incoming_requests, request)
+
+            #paginated_requests = paginator.paginate_queryset(incoming_requests, request)
+            print(f"Paginated Requests: {paginated_requests}")
+            if not paginated_requests:
+                return Response(
+                    {"message": "No incoming friend requests found."},
+                    status=status.HTTP_200_OK
+                )
+
+            print("incoming request" ,incoming_requests)
+            requests_data = []
+            requests_data = [
+                {
+                    "friend request id":req.id,
+                    "from_user_id": req.from_user_id,
+                    "username": req.from_user.username,
+                    "first name": req.from_user.first_name,
+                    "last name": req.from_user.last_name,
+                    "created": req.created.isoformat(),
+                }
+                for req in incoming_requests
+            ]
+
+            return paginator.get_paginated_response(requests_data)
+        except Exception as e:
+            return Response(
+                {"error": "An error occurred while fetching friend requests."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 #list sent request friend 
 class SentFriendRequestListView(APIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
     def get(self, request):
-        user = request.user
-        sent_requests = FriendshipRequest.objects.filter(from_user=user)
-        print(f"sent request: {sent_requests}")
-        for request in sent_requests:
-            print(f"sent request to: {request.to_user}")
-        return Response({"friends": "nice"})
-    
+        try:
+            user = request.user
+            print(f"User ID: {user.id}")
+            sent_requests = FriendshipRequest.objects.filter(from_user_id=user.id)
+            print(f"Sent Requests: {list(sent_requests)}")
+            paginator = self.pagination_class()
+            paginated_requests = paginator.paginate_queryset(sent_requests, request)
+            print(f"Paginated Requests: {paginated_requests}")
+            if not paginated_requests:
+                return Response(
+                    {"message": "No sent friend requests found."},
+                    status=status.HTTP_200_OK
+                )
+            requests_data = [
+                {
+                    "friend_request_id": req.id,
+                    "to_user_id": req.to_user.id,
+                    "username": req.to_user.username,
+                    "first_name": req.to_user.first_name,
+                    "last_name": req.to_user.last_name,
+                    "created": req.created.isoformat(),
+                }
+                for req in paginated_requests
+            ]
+            return paginator.get_paginated_response(requests_data)
+        except Exception as e:
+            return Response(
+                {"error": "An error occurred while fetching sent friend requests."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class CancelFriendRequest(APIView):
     permission_classes = [IsAuthenticated]
@@ -144,7 +219,7 @@ class CancelFriendRequest(APIView):
             return Response({"error": "Request not found."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class RemoveFriendRequest(APIView):
+class RemoveFriend(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, friend_id):
