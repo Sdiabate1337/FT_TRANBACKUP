@@ -40,6 +40,45 @@ def send_friend_request_notification(sender, instance, created, **kwargs):
             }
         )
 
+
+class FriendListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        try:
+            friendships = Friend.objects.filter(
+                Q(from_user=user) | Q(to_user=user)
+            ).select_related('from_user', 'to_user')
+
+            friend_users = {
+                (f.to_user if f.from_user == user else f.from_user)
+                for f in friendships
+            }
+
+            friend_data = [
+                {
+                    "id": friend.id,
+                    "username": friend.username,
+                    "full_name": f"{friend.first_name} {friend.last_name}".strip(),
+                    "profile_picture": (
+                        friend.profile.profile_picture.url
+                        if hasattr(friend, 'profile') and friend.profile.profile_picture
+                        else None
+                    ),
+                }
+                for friend in friend_users
+            ]
+
+            return Response({"friends": friend_data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": "Failed to fetch friends."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class SendFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -88,43 +127,7 @@ class SendFriendRequestView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-class FriendListView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-
-        friendships = Friend.objects.filter(
-            Q(from_user_id=user.id) | Q(to_user_id=user.id)
-        )
-
-        friend_users = []
-        for friendship in friendships:
-            if friendship.from_user_id == user.id:
-                friend_id = friendship.to_user_id
-            else:
-                friend_id = friendship.from_user_id
-
-            try:
-                friend = User.objects.get(id=friend_id)
-                friend_users.append(friend)
-            except User.DoesNotExist:
-                continue 
-        friend_data = [
-            {
-                "id": friend.id,
-                "username": friend.username,
-                "full_name": f"{friend.first_name} {friend.last_name}",
-                "profile_picture": (
-                    friend.profile.profile_picture.url
-                    if hasattr(friend, 'profile') and friend.profile.profile_picture
-                    else None
-                ),
-            }
-            for friend in friend_users
-        ]
-
-        return Response({"friends": friend_data})
 
 class SentFriendRequestListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -238,6 +241,7 @@ class RemoveFriend(APIView):
         try:
             try:
                 friend_id = int(friend_id)
+                print(friend_id)
             except ValueError:
                 return Response(
                     {"error": "Invalid friend ID. Please provide a valid integer."},
@@ -245,7 +249,8 @@ class RemoveFriend(APIView):
                 )
             friendship = get_object_or_404(
                 Friend,
-                Q(user1=request.user, user2_id=friend_id) | Q(user1_id=friend_id, user2=request.user)
+                Q(from_user_id=request.user, to_user_id=friend_id) | Q(from_user_id=friend_id, 
+                    to_user_id=request.user)
             )
             friendship.delete()
 
@@ -259,52 +264,6 @@ class RemoveFriend(APIView):
                 {"error": "An unexpected error occurred while removing the friend."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-# class UnblockUser(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def delete(self, request, user_id):
-#         try:
-#             blocked_user = Block.objects.filter(blocker=request.user, blocked_id=user_id).first()
-#             if not blocked_user:
-#                 return Response({"error": "User is not blocked."}, status=status.HTTP_400_BAD_REQUEST)
-#             blocked_user.delete()
-#             return Response({"message": "User unblocked successfully."}, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
-
-# class UserInfoView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, user_id):
-        
-#         user = User.objects.filter(id=user_id).first()
-#         if user:
-#             if Block.objects.filter(blocker=user, blocked=self.request.user).exists() or \
-#                 Block.objects.filter(blocker=self.request.user, blocked=user).exists():
-#                 raise PermissionDenied("You are blocked by the user")
-#             serializer = UserSerializer(user)
-#             return Response(serializer.data,status=status.HTTP_200_OK)
-#         else:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-# class MyInfo(APIView):
-#     permission_classes = [IsAuthenticated]
-    
-#     def get(self, request):
-#         serializer = UserSerializer(request.user, context={"request": request})
-#         return Response(serializer.data)
-
-
-# class BlockedUsersList(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         blocked_users = User.objects.filter(
-#             id__in=Block.objects.filter(blocker=request.user).values_list("blocked", flat=True)
-#         ).values("username")  
-#         return Response({"blocked_users": list(blocked_users)}, status=status.HTTP_200_OK)
 
 class RespondFriendRequestView(APIView):
 
@@ -328,8 +287,8 @@ class RespondFriendRequestView(APIView):
                 return Response({"error": "You are not authorized to accept this request"}, status=status.HTTP_403_FORBIDDEN)
             if action == "accept":
                 friend1 = Friend.objects.get_or_create(
-                        from_user_id=min(friendRequest.from_user_id.id, friendRequest.to_user_id.id),
-                        to_user_id=max(friendRequest.from_user_id.id, friendRequest.to_user_id.id)
+                        from_user_id=min(friendRequest.from_user_id, friendRequest.to_user_id),
+                        to_user_id=max(friendRequest.from_user_id, friendRequest.to_user_id)
                     )
 
                 friendRequest.delete()
@@ -340,7 +299,7 @@ class RespondFriendRequestView(APIView):
                 friendRequest.delete()
                 return Response({"message": "Friend request rejected"}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"error -- ": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error: ": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
 from django.db.models import Q
