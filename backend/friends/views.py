@@ -133,21 +133,17 @@ class SentFriendRequestListView(APIView):
     def get(self, request):
         try:
             user = request.user
-            # Fetch sent friend requests
             sent_requests = FriendshipRequest.objects.filter(from_user=user)
 
-            # Paginate the queryset
             paginator = self.pagination_class()
             paginated_requests = paginator.paginate_queryset(sent_requests, request)
 
-            # If there are no sent requests
             if not paginated_requests:
                 return Response(
                     {"message": "No sent friend requests found."},
                     status=status.HTTP_200_OK
                 )
 
-            # Construct the response data
             requests_data = [
                 {
                     "friend_request_id": req.id,
@@ -156,13 +152,10 @@ class SentFriendRequestListView(APIView):
                     "first_name": req.to_user.first_name,
                     "last_name": req.to_user.last_name,
                     "created": req.created.isoformat(),
-                    "rejected": req.rejected,
-                    "viewed": req.viewed,
                 }
                 for req in paginated_requests
             ]
 
-            # Return the paginated response
             return paginator.get_paginated_response(requests_data)
         except Exception as e:
             return Response(
@@ -185,7 +178,6 @@ class ReceiveFriendRequestListView(APIView):
             print("paginator: ",paginator)
             paginated_requests = paginator.paginate_queryset(incoming_requests, request)
 
-            #paginated_requests = paginator.paginate_queryset(incoming_requests, request)
             print(f"Paginated Requests: {paginated_requests}")
             if not paginated_requests:
                 return Response(
@@ -335,15 +327,18 @@ class RespondFriendRequestView(APIView):
             if friendRequest.to_user != request.user:
                 return Response({"error": "You are not authorized to accept this request"}, status=status.HTTP_403_FORBIDDEN)
             if action == "accept":
-                #friend1 = Friend.objects.create(from_user_id=friendRequest.from_user_id, to_user_id=friendRequest.to_user_id)
-                friend1, created = Friend.objects.get_or_create(
-        from_user_id=friendRequest.from_user_id,
-        to_user_id=friendRequest.to_user_id
-    )
-                print("i m here")
+                friend1 = Friend.objects.get_or_create(
+                        from_user_id=min(friendRequest.from_user_id.id, friendRequest.to_user_id.id),
+                        to_user_id=max(friendRequest.from_user_id.id, friendRequest.to_user_id.id)
+                    )
+
                 friendRequest.delete()
+                print("i m here")
                 print("friend1", friend1)
                 return Response({"message": "Friend request accepted"}, status=status.HTTP_200_OK)
+            elif action == "reject":
+                friendRequest.delete()
+                return Response({"message": "Friend request rejected"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error -- ": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
