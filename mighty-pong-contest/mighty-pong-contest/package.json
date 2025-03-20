@@ -1,0 +1,29 @@
+{
+  "name": "ft-transcendence",
+  "version": "1.0.0",
+  "description": "A single-page application for Pong contest",
+  "main": "src/js/app.js",
+  "scripts": {
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production"
+  },
+  "keywords": [
+    "pong",
+    "contest",
+    "single-page application",
+    "bootstrap"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^5.3.0",
+    "css-loader": "^6.7.3",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.11.1"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^5.5.0"
+  }
+}

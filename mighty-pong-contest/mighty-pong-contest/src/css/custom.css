@@ -1,0 +1,16 @@
+.hero-section {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+.footer {
+    padding: 2rem 0;
+    background-color: #343a40;
+    color: white;
+}
+
+.tournament-bracket {
+    margin-top: 2rem;
+}

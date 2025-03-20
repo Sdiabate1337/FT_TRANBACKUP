@@ -1,0 +1,90 @@
+/* Variables de couleurs utilisées dans l'arrière-plan */
+:root {
+    --cyber-blue: #00f2fe;
+    --cyber-purple: #4a21ef;
+    --cyber-magenta: #f706cf;
+    --cyber-green: #04ffa3;
+    --cyber-yellow: #ffde12;
+    --dark-bg: #090b13;
+    --dark-panel: rgba(13, 16, 29, 0.9);
+}
+
+/* Arrière-plan dynamique */
+.arena-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* Grille cyberpunk */
+.cyber-grid {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: 
+        linear-gradient(rgba(4, 255, 163, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(4, 255, 163, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    transform-origin: center;
+    transform: perspective(500px) rotateX(60deg);
+    animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 30px; }
+}
+
+/* Particules flottantes */
+.particles {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--cyber-blue);
+    box-shadow: 0 0 10px 2px var(--cyber-blue);
+    opacity: 0.3;
+    animation: floatParticle var(--duration) linear infinite;
+}
+
+@keyframes floatParticle {
+    0% { transform: translateY(100vh) translateX(0); }
+    100% { transform: translateY(-10vh) translateX(calc(var(--drift) * 10px)); }
+}
+
+/* Effet de scan sur toute la page */
+.scan-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 50%,
+        rgba(0, 242, 254, 0.05) 50.5%,
+        transparent 51%
+    );
+    background-size: 100% 8px;
+    pointer-events: none;
+    z-index: 999;
+    animation: scanEffect 8s linear infinite;
+}
+
+@keyframes scanEffect {
+    0% { transform: translateY(-100vh); }
+    100% { transform: translateY(100vh); }
+}
