@@ -1,0 +1,128 @@
+/* Animations pour les transitions de page */
+#content {
+    position: relative;
+    min-height: 50vh; /* Hauteur minimale pour éviter les sauts de page */
+}
+
+.page-transition-in {
+    animation: fadeInUp 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.page-transition-out {
+    animation: fadeOutDown 0.3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* Animation pour les composants individuels */
+.component-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.component-fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Animations spéciales pour les panneaux */
+.panel-slide-in {
+    animation: slideInRight 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.panel-slide-out {
+    animation: slideOutLeft 0.3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+/* Animation d'erreur pour les formulaires */
+.shake {
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+/* Animation de chargement (loader) */
+.loading-spinner {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid rgba(0, 242, 254, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--cyber-blue);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Page d'erreur 404 */
+.error-container {
+    text-align: center;
+    padding: 3rem 1rem;
+    animation: glitch 1s infinite alternate;
+}
+
+@keyframes glitch {
+    0% { transform: translate(0); text-shadow: 0 0 0 transparent; }
+    20% { transform: translate(-2px, 2px); text-shadow: 2px 0 var(--cyber-magenta); }
+    40% { transform: translate(-2px, -2px); text-shadow: -2px 0 var(--cyber-green); }
+    60% { transform: translate(2px, 2px); text-shadow: 2px 2px var(--cyber-blue); }
+    80% { transform: translate(2px, -2px); text-shadow: -2px -2px var(--cyber-yellow); }
+    100% { transform: translate(0); text-shadow: 0 0 0 transparent; }
+}

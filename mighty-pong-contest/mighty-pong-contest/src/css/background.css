@@ -1,12 +1,31 @@
 /* Variables de couleurs utilisées dans l'arrière-plan */
 :root {
     --cyber-blue: #00f2fe;
-    --cyber-purple: #4a21ef;
-    --cyber-magenta: #f706cf;
     --cyber-green: #04ffa3;
-    --cyber-yellow: #ffde12;
+    --cyber-magenta: #f706cf;
+    --cyber-yellow: #ffd900;
+    --cyber-dark: #090b13;
+    --cyber-deep-blue: #0a1a2f;
+    --cyber-accent: #ff2a6d;
     --dark-bg: #090b13;
     --dark-panel: rgba(13, 16, 29, 0.9);
+
+    --grid-pattern: repeating-linear-gradient(
+        rgba(0, 242, 254, 0.03) 0px, 
+        rgba(0, 242, 254, 0.03) 1px, 
+        transparent 1px, 
+        transparent 20px
+    );
+
+     /* Variables de taille responsives */
+     --title-size: 1.5rem;
+     --text-size: 1rem;
+     --small-text: 0.85rem;
+     --padding-main: 2.5rem 1.5rem;
+     --card-padding: 1.5rem;
+     --avatar-size: 140px;
+     --border-radius: 8px;
+
 }
 
 /* Arrière-plan dynamique */

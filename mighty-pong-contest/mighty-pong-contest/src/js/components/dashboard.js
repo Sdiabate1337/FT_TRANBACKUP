@@ -16,12 +16,12 @@ export function renderDashboard(container) {
             </div>
             
             <!-- Effet scanline -->
-            <div class="scan-effect"></div>
+            
             
             <!-- Contenu principal -->
             <div class="main-container">
                 <div class="container">
-                    <h1 class="cyber-title">TABLEAU DE BORD</h1>
+                    <h1 class="cyber-title">DASHBOARD</h1>
                     
                     <div class="row mt-4">
                         <!-- Profil utilisateur -->

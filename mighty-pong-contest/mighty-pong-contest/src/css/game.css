@@ -1,0 +1,94 @@
+/* Styles pour le jeu Pong */
+.game-container {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  aspect-ratio: 16/9;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--cyber-blue);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+  overflow: hidden;
+}
+
+.game-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.game-controls {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.game-score {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--cyber-blue);
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+}
+
+.player-score {
+  margin: 0 2rem;
+}
+
+.game-countdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 5rem;
+  color: var(--cyber-green);
+  text-shadow: 0 0 20px rgba(4, 255, 163, 0.7);
+}
+
+.game-over {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+  animation: glitch 0.5s infinite alternate;
+}
+
+.game-over h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3rem;
+  color: var(--cyber-magenta);
+  text-shadow: 0 0 15px rgba(247, 6, 207, 0.7);
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .game-score {
+    font-size: 1.5rem;
+  }
+  
+  .game-countdown {
+    font-size: 3.5rem;
+  }
+  
+  .game-over h2 {
+    font-size: 2rem;
+  }
+}

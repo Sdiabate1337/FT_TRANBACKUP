@@ -1,4 +1,4 @@
-import { handleOAuthCallback } from '../services/auth.js';
+import { handleOAuthCallback } from '../../services/auth.js';
 import { navigateTo } from '../router.js';
 
 export async function renderOAuthCallback(container) {

@@ -1,330 +1,155 @@
-/* Importer les styles communs */
+/* Importer les styles communs et polices */
 @import url('./background.css');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
-
-/* Conteneur principal */
-.main-container {
-    position: relative;
-    z-index: 1;
-    padding: 2rem 1rem;
-}
-
-/* Variables CSS globales (si elles ne sont pas déjà définies ailleurs) */
 :root {
     --cyber-blue: #00f2fe;
     --cyber-green: #04ffa3;
     --cyber-magenta: #f706cf;
     --cyber-yellow: #ffd900;
     --cyber-dark: #090b13;
+    --cyber-deep-blue: #0a1a2f;
+    
+    /* Variables responsives */
+    --title-size: clamp(1.2rem, 3vw, 1.8rem);
+    --padding-main: clamp(1rem, 3vw, 2.5rem) clamp(0.8rem, 2vw, 1.5rem);
+    --card-padding: clamp(1rem, 2vw, 1.5rem);
+    --avatar-size: clamp(100px, 15vw, 140px);
 }
 
-/* Styles de base */
+/* Conteneur principal */
+.main-container {
+    position: relative;
+    z-index: 1;
+    padding: var(--padding-main);
+    max-width: 1440px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: clamp(1rem, 2vw, 2rem);
+    background-image: 
+        radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.03) 0%, transparent 70%),
+        var(--grid-pattern);
+}
+
+/* Éléments de texte et titres */
+.cyber-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: var(--title-size);
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+    letter-spacing: 2px;
+    margin-bottom: 1.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.h5 {
+    display: inline-block;
+    position: relative;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--cyber-blue);
+    text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+    letter-spacing: 2px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    margin-bottom: 1.8rem;
+    text-transform: uppercase;
+}
+
+.h5::after {
+    content: ']';
+    position: absolute;
+    right: -15px;
+    top: 0;
+    color: var(--cyber-blue);
+    opacity: 0.7;
+}
+
+.h5::before {
+    content: '[';
+    position: absolute;
+    left: -15px;
+    color: var(--cyber-blue);
+    opacity: 0.7;
+}
+
+/* Avatar cyberpunk */
 .cyber-avatar {
     position: relative;
-    width: 120px; /* Taille légèrement augmentée */
-    height: 120px;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
     border-radius: 50%;
-    margin: 0 auto;
+    margin: 0 auto 1.5rem;
     box-shadow: 
         0 0 0 3px rgba(0, 242, 254, 0.3),
         0 0 15px 5px rgba(0, 242, 254, 0.5);
     overflow: hidden;
-    animation: avatarPulse 3s infinite alternate;
+    animation: avatarPulse 4s infinite alternate;
+    z-index: 2;
 }
 
 @keyframes avatarPulse {
     0% { box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.3), 0 0 15px 5px rgba(0, 242, 254, 0.3); }
+    33% { box-shadow: 0 0 0 3px rgba(4, 255, 163, 0.3), 0 0 15px 5px rgba(4, 255, 163, 0.3); }
+    66% { box-shadow: 0 0 0 3px rgba(247, 6, 207, 0.3), 0 0 15px 5px rgba(247, 6, 207, 0.3); }
     100% { box-shadow: 0 0 0 4px rgba(0, 242, 254, 0.5), 0 0 25px 5px rgba(0, 242, 254, 0.5); }
+}
+
+.cyber-avatar:hover img {
+    transform: scale(1.1);
+    animation: glitchEffect 0.4s steps(2) infinite;
+}
+
+@keyframes glitchEffect {
+    0% { transform: translate(0); }
+    20% { transform: translate(-3px, 3px); filter: hue-rotate(70deg); }
+    40% { transform: translate(-3px, -3px); filter: hue-rotate(140deg); }
+    60% { transform: translate(3px, 3px); filter: hue-rotate(210deg); }
+    80% { transform: translate(3px, -3px); filter: hue-rotate(280deg); }
+    100% { transform: translate(0); filter: hue-rotate(0deg); }
 }
 
 .cyber-avatar::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: -100%;
     left: 0;
     right: 0;
-    height: 30%;
-    background: linear-gradient(to bottom, rgba(0, 242, 254, 0.2), transparent);
-    z-index: 1;
+    height: 200%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(0, 242, 254, 0.15) 50%,
+        transparent 100%
+    );
+    animation: scannerMove 3s ease-in-out infinite;
+    z-index: 3;
     pointer-events: none;
 }
 
-.cyber-avatar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 50%;
-    box-shadow: inset 0 0 15px rgba(0, 242, 254, 0.7);
-    z-index: 2;
-    background: radial-gradient(circle at 70% 70%, transparent 60%, rgba(0, 242, 254, 0.1) 100%);
-    pointer-events: none;
+@keyframes scannerMove {
+    0%, 100% { transform: translateY(0%); }
+    50% { transform: translateY(50%); }
 }
 
 .cyber-avatar img {
     transition: transform 0.5s ease;
 }
 
-.cyber-avatar:hover img {
-    transform: scale(1.1);
-}
-
-/* Couleurs et styles texte */
+/* Couleurs textuelles */
 .text-cyber-blue { color: var(--cyber-blue); text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
 .text-cyber-green { color: var(--cyber-green); text-shadow: 0 0 5px rgba(4, 255, 163, 0.5); }
 .text-cyber-magenta { color: var(--cyber-magenta); text-shadow: 0 0 5px rgba(247, 6, 207, 0.5); }
 .text-cyber-yellow { color: var(--cyber-yellow); text-shadow: 0 0 5px rgba(255, 217, 0, 0.5); }
 
-/* Éléments de carte */
-.match-item, .tournament-item {
-    background: rgba(9, 11, 19, 0.7);
-    border: 1px solid rgba(0, 242, 254, 0.3);
-    border-left: 3px solid var(--cyber-blue);
-    border-radius: 8px;
-    padding: 1.2rem;
-    margin-bottom: 1.2rem;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.match-item::before, .tournament-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyber-blue), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.match-item::after, .tournament-item::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyber-blue), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.match-item:hover, .tournament-item:hover {
-    transform: translateY(-5px) scale(1.02);
-    border-color: var(--cyber-blue);
-    box-shadow: 
-        0 10px 20px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(0, 242, 254, 0.3);
-}
-
-.match-item:hover::before, .match-item:hover::after,
-.tournament-item:hover::before, .tournament-item:hover::after {
-    opacity: 1;
-}
-
-/* Résultats de match */
-.match-result {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 2px;
-    padding: 0.5rem 1rem;
-    margin-bottom: 0.8rem;
-    position: relative;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.match-result.win { 
-    color: var(--cyber-green); 
-    text-shadow: 0 0 5px rgba(4, 255, 163, 0.5);
-    background: rgba(4, 255, 163, 0.1);
-    border-left: 3px solid var(--cyber-green);
-}
-
-.match-result.loss { 
-    color: var(--cyber-magenta); 
-    text-shadow: 0 0 5px rgba(247, 6, 207, 0.5);
-    background: rgba(247, 6, 207, 0.1);
-    border-left: 3px solid var(--cyber-magenta);
-}
-
-/* Détails des matchs */
-.match-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.match-players {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 0.5rem 0;
-}
-
-.match-score {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    color: white;
-    font-size: 1.4rem;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    position: relative;
-    padding: 0 1.5rem;
-    background: rgba(0, 242, 254, 0.1);
-    border-radius: 20px;
-}
-
-.match-score::before, .match-score::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    transform: translateY(-50%);
-    border-radius: 50%;
-    background-color: var(--cyber-blue);
-    box-shadow: 0 0 8px var(--cyber-blue);
-}
-
-.match-score::before { left: 8px; }
-.match-score::after { right: 8px; }
-
-.player-name {
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.9);
-    transition: color 0.3s;
-}
-
-.match-item:hover .player-name {
-    color: var(--cyber-blue);
-    text-shadow: 0 0 5px rgba(0, 242, 254, 0.3);
-}
-
-.match-time {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    font-style: italic;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0.2rem 0.6rem;
-    border-radius: 10px;
-}
-
-/* Entêtes de tournois */
-.tournament-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 1px dashed rgba(0, 242, 254, 0.3);
-    padding-bottom: 0.8rem;
-}
-
-.tournament-name {
-    margin: 0;
-    font-family: 'Orbitron', sans-serif;
-    color: var(--cyber-blue);
-    text-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
-    letter-spacing: 1px;
-    font-size: 1.1rem;
-    position: relative;
-    padding-left: 15px;
-}
-
-.tournament-name::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
-    background-color: var(--cyber-blue);
-    border-radius: 50%;
-    box-shadow: 0 0 8px var(--cyber-blue);
-}
-
-.tournament-time {
-    font-size: 0.9rem;
-    color: var(--cyber-yellow);
-    background: rgba(255, 217, 0, 0.1);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    text-shadow: 0 0 5px rgba(255, 217, 0, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.tournament-time::before {
-    content: '\f017'; /* Code d'icône d'horloge Bootstrap Icons */
-    font-family: "bootstrap-icons";
-    font-size: 0.9rem;
-}
-
-.tournament-details {
-    display: flex;
-    gap: 2rem;
-    font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin: 1rem 0;
-}
-
-.tournament-details i {
-    margin-right: 8px;
-    color: var(--cyber-blue);
-}
-
-/* Animations pour les éléments interactifs */
-.cyber-btn, .cyber-btn-text {
-    position: relative;
-    overflow: hidden;
-}
-
-.cyber-btn::after, .cyber-btn-text::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 50%);
-    opacity: 0;
-    transform: scale(1);
-    transition: transform 0.5s, opacity 0.5s;
-}
-
-.cyber-btn:hover::after, .cyber-btn-text:hover::after {
-    opacity: 1;
-    transform: scale(0);
-}
-
-/* Animation de pulse pour les boutons d'action principaux */
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(4, 255, 163, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(4, 255, 163, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(4, 255, 163, 0); }
-}
-
-.cyber-btn.cyber-btn-42 {
-    animation: pulse 2.5s infinite;
-}
-
-/* Améliorer l'apparence des panneaux */
+/* Panneau holographique */
 .holo-panel {
     background: rgba(9, 11, 19, 0.7);
     border: 1px solid rgba(0, 242, 254, 0.3);
     border-radius: 10px;
-    padding: 2rem;
-    margin-bottom: 2rem;
+    padding: clamp(1.2rem, 3vw, 2rem);
+    margin-bottom: clamp(1rem, 3vw, 2rem);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
     position: relative;
@@ -354,58 +179,283 @@
     100% { opacity: 0.3; }
 }
 
-.holo-panel::after {
+/* Info Box */
+.info-box {
+    background: rgba(9, 11, 19, 0.5);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: 8px;
+    padding: var(--card-padding);
+    margin-bottom: 1.8rem;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.info-box::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
     height: 100%;
-    background: radial-gradient(circle at bottom right, rgba(0, 242, 254, 0.1), transparent 70%);
-    pointer-events: none;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--cyber-blue), var(--cyber-green));
+    animation: gradientShift 6s infinite;
 }
 
-/* Styles de titre */
-.h5 {
-    display: inline-block;
+@keyframes gradientShift {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
+}
+
+/* Animation des données */
+.info-box > div {
+    animation: dataReveal 0.7s forwards cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 0;
+}
+
+@keyframes dataReveal {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.info-box > div:nth-child(1) { animation-delay: 0.1s; }
+.info-box > div:nth-child(2) { animation-delay: 0.25s; }
+.info-box > div:nth-child(3) { animation-delay: 0.4s; }
+.info-box > div:nth-child(4) { animation-delay: 0.55s; }
+.info-box > div:nth-child(5) { animation-delay: 0.7s; }
+
+/* Cartes de match */
+.match-item, .tournament-item {
+    background: linear-gradient(135deg, rgba(9, 11, 19, 0.85), rgba(30, 40, 70, 0.65));
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    border-left: 3px solid var(--cyber-blue);
+    border-radius: 8px;
+    padding: var(--card-padding);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
     position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.match-item:hover, .tournament-item:hover {
+    transform: translateY(-5px);
+    border-color: var(--cyber-blue);
+    box-shadow: 
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(0, 242, 254, 0.3);
+}
+
+.match-result {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: clamp(0.85rem, 2vw, 1rem);
+    letter-spacing: 2px;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.8rem;
+    position: relative;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.match-result.win { 
+    color: var(--cyber-green); 
+    text-shadow: 0 0 5px rgba(4, 255, 163, 0.5);
+    background: rgba(4, 255, 163, 0.1);
+    border-left: 3px solid var(--cyber-green);
+}
+
+.match-result.loss { 
+    color: var(--cyber-magenta); 
+    text-shadow: 0 0 5px rgba(247, 6, 207, 0.5);
+    background: rgba(247, 6, 207, 0.1);
+    border-left: 3px solid var(--cyber-magenta);
+}
+
+/* Détails des matchs */
+.match-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.match-players {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.5rem, 1.5vw, 1.5rem);
+    padding: 0.5rem 0;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 220px;
+}
+
+.match-score {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1rem, 1rem + 0.8vw, 1.8rem);
+    color: white;
+    text-shadow: 0 0 10px rgba(0, 242, 254, 0.8);
+    position: relative;
+    padding: 0.3rem 2rem;
+    margin: 0.5rem 0;
+    background: #00f2fe26;
+    border-radius: 20px;
+    transition: all 0.3s;
+    box-shadow: inset 0 0 8px rgba(0, 242, 254, 0.3);
+}
+
+.match-score::before, .match-score::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: clamp(6px, 1vw, 10px);
+    height: clamp(6px, 1vw, 10px);
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background-color: var(--cyber-blue);
+    box-shadow: 0 0 10px var(--cyber-blue);
+}
+
+.match-score::before { left: 10px; }
+.match-score::after { right: 10px; }
+
+.player-name {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.9);
+    transition: color 0.3s;
+}
+
+.match-time {
+    font-size: clamp(0.75rem, 1.5vw, 0.8rem);
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+}
+
+/* Entêtes de tournois */
+.tournament-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px dashed rgba(0, 242, 254, 0.3);
+    padding-bottom: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tournament-name {
+    margin: 0;
     font-family: 'Orbitron', sans-serif;
     color: var(--cyber-blue);
-    text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
-    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+    letter-spacing: 1px;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    position: relative;
+    padding-left: 15px;
+}
+
+.tournament-name::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: var(--cyber-blue);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyber-blue);
+}
+
+.tournament-time {
+    font-size: 0.9rem;
+    color: var(--cyber-yellow);
+    background: rgba(255, 217, 0, 0.1);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    text-shadow: 0 0 5px rgba(255, 217, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tournament-details {
+    display: flex;
+    gap: clamp(1rem, 2vw, 2rem);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+/* Boutons */
+.cyber-btn {
+    position: relative;
+    background: rgba(9, 11, 19, 0.85);
+    color: var(--cyber-blue);
+    border: 1px solid var(--cyber-blue);
+    padding: 0.75rem 1.5rem;
+    font-family: 'Orbitron', sans-serif;
     font-weight: 600;
-    padding-bottom: 8px;
-    margin-bottom: 1.8rem;
+    font-size: clamp(0.8rem, 1.5vw, 0.95rem);
+    letter-spacing: 2px;
     text-transform: uppercase;
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 0.4rem;
+    border-radius: 4px;
+    z-index: 1;
 }
 
-.h5::after {
-    content: ']';
-    position: absolute;
-    right: -15px;
-    bottom: initial;
-    top: 0;
-    width: auto;
-    height: auto;
-    background: none;
-    box-shadow: none;
-    color: var(--cyber-blue);
-    opacity: 0.7;
+.cyber-btn:hover {
+    color: white;
+    border-color: var(--cyber-blue);
+    text-shadow: 0 0 5px white;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+    transform: translateY(-3px);
 }
 
-.h5::before {
-    content: '[';
-    position: absolute;
-    left: -15px;
-    color: var(--cyber-blue);
-    opacity: 0.7;
+.cyber-btn.cyber-btn-42 {
+    background: linear-gradient(135deg, rgba(4, 255, 163, 0.2), rgba(0, 242, 254, 0.2));
+    border-color: var(--cyber-green);
+    color: var(--cyber-green);
+    box-shadow: 0 0 15px rgba(4, 255, 163, 0.3);
+    animation: pulse 2.5s infinite;
 }
 
-/* Améliorations visuelles pour le dashboard */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(4, 255, 163, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(4, 255, 163, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(4, 255, 163, 0); }
+}
 
-/* ===== AMÉLIORATIONS DU PROFIL ===== */
+.cyber-btn-text {
+    color: var(--cyber-green);
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s;
+}
 
-/* Style amélioré pour le nom */
+.cyber-btn-text:hover {
+    color: var(--cyber-green);
+    text-shadow: 0 0 8px rgba(4, 255, 163, 0.5);
+}
+
+/* Profil utilisateur */
 #user-display-name {
     font-family: 'Orbitron', sans-serif;
     color: white;
@@ -427,183 +477,70 @@
     background: linear-gradient(to right, transparent, var(--cyber-blue), transparent);
 }
 
-/* Style pour la boîte d'info */
-.info-box {
-    background: rgba(9, 11, 19, 0.5);
-    border: 1px solid rgba(0, 242, 254, 0.2);
-    border-radius: 8px;
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
-    backdrop-filter: blur(5px);
-    position: relative;
-    overflow: hidden;
+/* Media Queries pour responsive */
+@media (max-width: 1200px) {
+    .match-players {
+        gap: 1rem;
+    }
 }
 
-.info-box::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--cyber-blue), transparent);
+@media (max-width: 768px) {
+    .main-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .tournament-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .tournament-details {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .match-details {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .match-score {
+        margin: 0.8rem auto;
+    }
+    
+    .cyber-btn {
+        width: 100%;
+        margin: 0.3rem 0;
+    }
 }
 
-/* ===== AMÉLIORATIONS DES CARTES DE MATCH ===== */
-
-/* ===== AMÉLIORATIONS DES TOURNOIS ===== */
-.tournament-item {
-    background: linear-gradient(135deg, rgba(9, 11, 19, 0.8), rgba(74, 33, 239, 0.1));
-    border: 1px solid rgba(0, 242, 254, 0.3);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+@media (max-width: 480px) {
+    .holo-panel {
+        padding: 1rem;
+    }
+    
+    .match-score {
+        padding: 0.2rem 1.5rem;
+    }
+    
+    .match-score::before, .match-score::after {
+        width: 6px;
+        height: 6px;
+    }
+    
+    @keyframes scannerMove {
+        0%, 100% { transform: translateY(0%); opacity: 0.3; }
+        50% { transform: translateY(50%); opacity: 0.6; }
+    }
 }
 
-.tournament-item::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, transparent 70%);
-    opacity: 0;
-    transform: scale(0.5);
-    transition: transform 0.6s, opacity 0.6s;
+/* Support pour les préférences de mouvement réduit */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
-
-.tournament-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 
-        0 10px 25px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(0, 242, 254, 0.3);
-}
-
-.tournament-item:hover::after {
-    opacity: 1;
-    transform: scale(1);
-}
-
-.tournament-item .cyber-btn-text {
-    color: var(--cyber-green);
-    background: transparent;
-    border: none;
-    padding: 0.5rem 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
-    cursor: pointer;
-}
-
-.tournament-item .cyber-btn-text::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: var(--cyber-green);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s;
-}
-
-.tournament-item .cyber-btn-text:hover {
-    color: var(--cyber-green);
-    text-shadow: 0 0 8px rgba(4, 255, 163, 0.5);
-}
-
-.tournament-item .cyber-btn-text:hover::before {
-    transform: scaleX(1);
-}
-
-/* ===== AMÉLIORATIONS DES BOUTONS D'ACTION ===== */
-.cyber-btn {
-    position: relative;
-    background: rgba(9, 11, 19, 0.8);
-    color: var(--cyber-blue);
-    border: 1px solid var(--cyber-blue);
-    padding: 0.7rem 1.5rem;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 600;
-    font-size: 0.9rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    overflow: hidden;
-    transition: all 0.3s;
-    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
-    cursor: pointer;
-    margin: 0.3rem;
-    border-radius: 4px;
-    z-index: 1;
-}
-
-.cyber-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 242, 254, 0.2);
-    transition: transform 0.5s;
-    z-index: -1;
-    transform: skewX(-20deg);
-}
-
-.cyber-btn:hover {
-    color: white;
-    border-color: var(--cyber-blue);
-    text-shadow: 0 0 5px white;
-    box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
-    transform: translateY(-2px);
-}
-
-.cyber-btn:hover::before {
-    transform: skewX(-20deg) translateX(200%);
-}
-
-.cyber-btn.cyber-btn-42 {
-    background: linear-gradient(135deg, rgba(4, 255, 163, 0.2), rgba(0, 242, 254, 0.2));
-    border-color: var(--cyber-green);
-    color: var(--cyber-green);
-    box-shadow: 
-        0 0 15px rgba(4, 255, 163, 0.3),
-        inset 0 0 5px rgba(4, 255, 163, 0.2);
-    animation: pulse 2.5s infinite;
-}
-
-.cyber-btn.cyber-btn-42:hover {
-    background: linear-gradient(135deg, rgba(4, 255, 163, 0.3), rgba(0, 242, 254, 0.3));
-    color: white;
-    box-shadow: 
-        0 0 20px rgba(4, 255, 163, 0.5),
-        inset 0 0 10px rgba(4, 255, 163, 0.3);
-}
-
-/* ===== AMÉLIORATIONS GÉNÉRALES ===== */
-
-/* Animation pour les données chargées */
-@keyframes dataFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.info-box > div {
-    animation: dataFadeIn 0.5s forwards;
-    opacity: 0;
-}
-
-.info-box > div:nth-child(1) { animation-delay: 0.1s; }
-.info-box > div:nth-child(2) { animation-delay: 0.2s; }
-.info-box > div:nth-child(3) { animation-delay: 0.3s; }
-.info-box > div:nth-child(4) { animation-delay: 0.4s; }
-.info-box > div:nth-child(5) { animation-delay: 0.5s; }
 

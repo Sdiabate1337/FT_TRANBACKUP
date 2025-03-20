@@ -1,0 +1,218 @@
+/* Modales d'authentification */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    backdrop-filter: blur(5px);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.login-modal {
+    width: 90%;
+    max-width: 450px;
+    background: rgba(10, 12, 25, 0.95);
+    border: 2px solid var(--cyber-blue);
+    box-shadow: 0 0 30px rgba(0, 242, 254, 0.3);
+    border-radius: 8px;
+    padding: 2rem;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1), 
+                opacity 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    position: relative;
+}
+
+.modal-overlay.active .login-modal {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    color: var(--cyber-blue);
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: var(--cyber-green);
+}
+
+.modal-title {
+    color: var(--cyber-blue);
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+/* Messages */
+.error-message {
+    color: var(--cyber-magenta);
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(247, 6, 207, 0.1);
+    border-left: 3px solid var(--cyber-magenta);
+    margin-bottom: 0.5rem;
+}
+
+.success-message {
+    color: var(--cyber-green);
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(4, 255, 163, 0.1);
+    border-left: 3px solid var(--cyber-green);
+    margin-bottom: 0.5rem;
+}
+
+.loading-message {
+    color: var(--cyber-blue);
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(0, 242, 254, 0.1);
+    border-left: 3px solid var(--cyber-blue);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.info-message {
+    color: #ffcc00;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(255, 204, 0, 0.1);
+    border-left: 3px solid #ffcc00;
+    margin-bottom: 0.5rem;
+}
+
+.loading-message::before {
+    content: '';
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 2px solid var(--cyber-blue);
+    border-radius: 50%;
+    border-top-color: transparent;
+    margin-right: 8px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Divider */
+.cyber-divider {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+    color: var(--cyber-blue);
+}
+
+.cyber-divider::before,
+.cyber-divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.cyber-divider span {
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+/* Animation d'erreur */
+.error {
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px); }
+}
+
+/* Styles pour les info-box dans les modales */
+.verification-info {
+    background: rgba(0, 242, 254, 0.1);
+    border-left: 3px solid var(--cyber-blue);
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.verification-info strong {
+    color: var(--cyber-blue);
+}
+
+/* Style des formulaires */
+.cyber-form .form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cyber-form .form-row .input-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.cyber-form .input-group {
+    margin-bottom: 1rem;
+}
+
+.cyber-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--cyber-blue);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cyber-form .cyber-input {
+    width: 100%;
+    background: rgba(10, 15, 30, 0.6);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.cyber-form .cyber-input:focus {
+    border-color: var(--cyber-blue);
+    box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.2);
+    outline: none;
+}
+
+.cyber-form .input-error {
+    color: var(--cyber-magenta);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    min-height: 1rem;
+}
