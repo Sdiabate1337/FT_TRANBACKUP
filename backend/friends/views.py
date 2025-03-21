@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import Http404
 
 # Create your views here.
 from rest_framework.pagination import PageNumberPagination
@@ -28,14 +29,14 @@ User = get_user_model()
 
 @receiver(post_save, sender=FriendshipRequest)
 def send_friend_request_notification(sender, instance, created, **kwargs):
-    if created:  # Only send notifications for new friend requests
+    if created:   
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"notifications_{instance.to_user.id}",  # Send to the recipient's group
+            f"notifications_{instance.to_user.id}",  
             {
-                'type': 'send_notification',  # This matches the method in NotificationConsumer
-                'from_user_id': instance.from_user.id,  # ID of the sender
-                'from_user_username': instance.from_user.username,  # Username of the sender
+                'type': 'send_notification',  
+                'from_user_id': instance.from_user.id,  
+                'from_user_username': instance.from_user.username,
                 'message': f"You have a new friend request from {instance.from_user.username}.",  # Notification message
             }
         )
@@ -62,11 +63,6 @@ class FriendListView(APIView):
                     "id": friend.id,
                     "username": friend.username,
                     "full_name": f"{friend.first_name} {friend.last_name}".strip(),
-                    "profile_picture": (
-                        friend.profile.profile_picture.url
-                        if hasattr(friend, 'profile') and friend.profile.profile_picture
-                        else None
-                    ),
                 }
                 for friend in friend_users
             ]
@@ -247,21 +243,30 @@ class RemoveFriend(APIView):
                     {"error": "Invalid friend ID. Please provide a valid integer."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            friendship = get_object_or_404(
-                Friend,
-                Q(from_user_id=request.user, to_user_id=friend_id) | Q(from_user_id=friend_id, 
-                    to_user_id=request.user)
-            )
-            friendship.delete()
-
-            return Response(
+            try:
+                print("i ma here 1")
+                other_user = get_object_or_404(User, id=friend_id)
+                print("i ma here 2 ", other_user.username)
+            except Http404:
+                    return Response(
+                        {"error": "User not found."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+            if Friend.objects.are_friends(request.user,other_user) == True or Friend.objects.are_friends(other_user,request.user):
+                Friend.objects.remove_friend(request.user, other_user)
+                return Response(
                 {"message": "Friend removed successfully."},
                 status=status.HTTP_200_OK
             )
-
+            else:
+                print("i ma here")
+                return Response(
+                    {"error": "You are not friends with this user."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         except Exception as e:
             return Response(
-                {"error": "An unexpected error occurred while removing the friend."},
+                {"error 1": "An unexpected error occurred while removing the friend."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

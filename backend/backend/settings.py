@@ -67,11 +67,13 @@ INSTALLED_APPS = [
     'MyAuth',
     'friends',
     'channels',
-    'onlineStatus'
+    'onlineStatus',
+    'userManagement',
 
 ]
 
-
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
