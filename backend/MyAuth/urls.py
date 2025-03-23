@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from .views import RegisterUserView,Enable2FAView ,\
         VerifyUserEmail,LoginUserView, VerifyView, TestAuthenticationView ,\
          _42Redirect , CollectAuthorizeCode, \
-        ModelManagementView,    DeleteUser,testJs,Disable2FAView
+        ModelManagementView,    DeleteUser,testJs,Disable2FAView,PasswordResetRequestView,PasswordResetConfirmView
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.views import TokenBlacklistView
@@ -17,7 +17,9 @@ urlpatterns = [
     path('verify-email/',VerifyUserEmail.as_view(),name='verify'),
     path('login/',LoginUserView.as_view(),name='login'),
     path('profile/',TestAuthenticationView.as_view(),name='granted'),
-    # path('password-reset/',PasswordResetRequestView.as_view(),name='password-reset'),
+   # path('password-reset/',PasswordResetRequestView.as_view(),name='password-reset'),
+    path('password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
+    path('password-reset-confirm/<uid>/<token>/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     # path('password-reset-confirm/<uidb64>/<token>/',PasswordResetConfirm.as_view(),name='password-reset-confirm'),
     # path('set-password/',SetNewPassword.as_view(),name='set-password'),
     # path('logout/',LogoutUserView.as_view(),name='logout'),

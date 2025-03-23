@@ -4,7 +4,7 @@ import requests
 
 from backend import settings# type: ignore
 from .serializers import UserRegisterSerializer,LoginSerializer,PasswordResetRequestSerializer\
-                            ,SetNewPasswordSerializer,LogoutUserSerializer,OTPSerializer
+                            ,OTPSerializer
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 from .utils import send_code_to_user
@@ -17,7 +17,12 @@ from django.utils.encoding import smart_str,DjangoUnicodeDecodeError# type: igno
 from django.contrib.auth.tokens import PasswordResetTokenGenerator# type: ignore
 from django.core.cache import cache
 from urllib.parse import quote
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.urls import reverse
+from .serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import serializers
 from .utils import generate_otp_secret, generate_otp_uri,verify_otp ,generate_qr_code
@@ -462,33 +467,37 @@ class ModelManagementView(APIView):
             )
 
 
-# --------- user management ----------------
-# class  PasswordResetRequestView(GenericAPIView):
-#     serializer_class=PasswordResetRequestSerializer
-#     def post(self, request):
-#         serializer= self.serializer_class(data=request.data, context={'request':request})
-#         serializer.is_valid(raise_exception=True)
-#         return Response({'message':"a link has been sent to  your email to reset your password"},status=status.HTTP_200_OK)
 
-# class PasswordResetConfirm(GenericAPIView):
-#     def get(self,request,uidb64,token):
-#         try:
-#             user_id=smart_str(urlsafe_base64_decode(uidb64))
-#             user=User.objects.get(id=user_id)
-#             if not PasswordResetTokenGenerator().check_token(user,token):
-#                 return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-#             return Response({'success':True,'message':'credentials is valid','uidb64':uidb64,'token':token},status=status.HTTP_200_OK)
-#         except DjangoUnicodeDecodeError:
-#             return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-    
 
-# class SetNewPassword(GenericAPIView):
-#     serializer_class=SetNewPasswordSerializer
-#     def patch(self,request):
-#         serializer=self.serializer_class(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         return Response({'message':'password reset successful'},status=status.HTTP_200_OK)
-    
+
+
+class PasswordResetRequestView(APIView):
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            uid, token = serializer.save()
+            reset_url = request.build_absolute_uri(
+                reverse('password-reset-confirm', kwargs={'uid': uid, 'token': token})
+            )
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_url}',
+                'noreply@example.com',
+                [serializer.validated_data['email']],
+                fail_silently=False,
+            )
+            return Response({"detail": "Password reset email sent."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetConfirmView(APIView):
+    def post(self, request, uid, token):
+        data = {'uid': uid, 'token': token, 'new_password': request.data.get('new_password')}
+        serializer = PasswordResetConfirmSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # class LogoutUserView(GenericAPIView):
 #     serializer_class=LogoutUserSerializer

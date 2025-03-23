@@ -41,16 +41,14 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
     async def send_friends_status(self):
         friends = await self.get_friends(self.user)
         for friend in friends:
-            # Check if the friend is online (you need to implement this logic)
             is_online =  self.is_user_online(friend)
             await self.send(text_data=json.dumps({
                 'type': 'friend_status',
-                'user_id': friend.id,
-                'username': friend.first_name,
+                'friend.id': friend.id,
+                'username': friend.username,
                 'is_online': is_online,
             }))
     def is_user_online(self, user):
-        #User = get_user_model() 
         return user.is_online
 
     async def user_status(self, event):
@@ -102,28 +100,25 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
         if self.user.is_anonymous:
-            await self.close()  # Reject unauthenticated users
+            await self.close()  
         else:
-            # Add the user to their personal notification group
             await self.channel_layer.group_add(
-                f"notifications_{self.user.id}",  # Group name (e.g., notifications_1)
-                self.channel_name  # Unique channel name for this WebSocket connection
+                f"notifications_{self.user.id}",   
+                self.channel_name  
             )
-            await self.accept()  # Accept the WebSocket connection
+            await self.accept()  
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user') and not self.user.is_anonymous:
-            # Remove the user from their notification group
             await self.channel_layer.group_discard(
                 f"notifications_{self.user.id}",
                 self.channel_name
             )
 
     async def send_notification(self, event):
-        # Send the notification to the user
         await self.send(text_data=json.dumps({
-            'type': 'friend_request',  # Type of notification
-            'from_user_id': event['from_user_id'],  # ID of the sender
-            'from_user_username': event['from_user_username'],  # Username of the sender
-            'message': event['message'],  # Notification message
+            'type': 'friend_request', 
+            'from_user_id': event['from_user_id'],   
+            'from_user_username': event['from_user_username'], 
+            'message': event['message'],   
         }))
