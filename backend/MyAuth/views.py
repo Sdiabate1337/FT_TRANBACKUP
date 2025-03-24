@@ -345,10 +345,6 @@ class DeleteUser(GenericAPIView):
         user.delete()
         print(user)
         return Response({"shrug":"shrug"})
-    
-    
-
-
 
 class PasswordResetRequestView(APIView):
     def post(self, request):

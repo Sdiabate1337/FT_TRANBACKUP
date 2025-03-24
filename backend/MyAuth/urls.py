@@ -24,9 +24,9 @@ urlpatterns = [
     path('verify2FA/', VerifyView.as_view(), name='VerifyView_2FA'),
     path('Redirect42', _42Redirect.as_view(), name='redirect'),
     path('2OAuth', CollectAuthorizeCode.as_view(), name='redirect11'),
-    # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    # path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
-    # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # path('profile/',TestAuthenticationView.as_view(),name='granted'),
     # path('delete', DeleteUser.as_view(),name="delete this mdf") ,
 
