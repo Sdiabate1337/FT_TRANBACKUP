@@ -333,3 +333,35 @@ class FriendStatus(APIView):
         return Response({"status:":"not friend"},status = 200)
 
 
+class SearchUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        search_query = request.query_params.get("search", "").strip()
+        if not search_query:
+            return Response(
+                {"error": "Search query is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        users = User.objects.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        ).values("id", "username", "first_name", "last_name")
+
+        if not users.exists():
+            return Response(
+                {"error": "No users found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        paginator = PageNumberPagination()
+        paginator.page_size = 10 
+        paginated_users = paginator.paginate_queryset(users, request)
+        return paginator.get_paginated_response({
+            "results": list(paginated_users),
+            "pagination": {
+                "current_page": paginator.page.number,
+                "total_pages": paginator.page.paginator.num_pages,
+                "total_results": paginator.page.paginator.count
+            }
+        })

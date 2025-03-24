@@ -4,7 +4,7 @@ import requests
 
 from backend import settings# type: ignore
 from .serializers import UserRegisterSerializer,LoginSerializer,PasswordResetRequestSerializer\
-                            ,OTPSerializer
+                            ,OTPSerializer,LogoutUserSerializer
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 from .utils import send_code_to_user
@@ -238,14 +238,14 @@ class Disable2FAView(GenericAPIView):
             }, status=status.HTTP_200_OK)
         return Response({"message": "2FA is not being disabled successfully."}, status=status.HTTP_200_OK)
 
-class TestAuthenticationView(GenericAPIView):
-    permission_classes = [IsAuthenticated]
+# class TestAuthenticationView(GenericAPIView):
+#     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
-        data={
-            'msg':'its works'
-        }
-        return Response(data, status=status.HTTP_200_OK)
+#     def get(self,request):
+#         data={
+#             'msg':'its works'
+#         }
+#         return Response(data, status=status.HTTP_200_OK)
 
 
 
@@ -347,127 +347,6 @@ class DeleteUser(GenericAPIView):
         return Response({"shrug":"shrug"})
     
     
-def testJs(request):
-    return render(request,"x.html")
-
-### ------------------------------- friends api -------------------------
-
-
-
-# list users by names
-# from django.core.paginator import Paginator
-# class SearchUser(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         search_query = request.query_params.get("search", "").strip()
-
-#         if not search_query:
-#             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         users = User.objects.filter(name__unaccent__icontains=search_query).values("id", "username")
-
-#         if not users:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Pagination
-#         paginator = Paginator(users, 10)  # 10 users per page
-#         page = request.query_params.get("page", 1)
-#         paginated_users = paginator.get_page(page)
-
-#         return Response({
-#             "results": list(paginated_users),
-#             "pagination": {
-#                 "current_page": paginated_users.number,
-#                 "total_pages": paginator.num_pages,
-#                 "total_results": paginator.count
-#             }
-#         }, status=status.HTTP_200_OK)
-
-# GET /api/friends/status/{user_id}/ → Check friendship status
-# (friends | pending_request | not_friends | blocked).
-
-
-
-# class ModelListView(APIView):
-#     def get(self, request):
-#         model_names = []
-#         for app_config in apps.get_app_configs():
-#             for model in app_config.get_models():
-#                 model_names.append(model._meta.model_name)
-#         return Response({"models": model_names})
-# class MyModelDeleteAllView(APIView):
-#     def delete(self, request, format=None):
-#         try:
-#             deleted_count = User.objects.all().delete()
-
-#             if deleted_count[0] > 0: # Check if any objects were actually deleted
-#                 return Response(
-#                     {"message": f"{deleted_count[0]} objects deleted successfully."},
-#                     status=status.HTTP_204_NO_CONTENT,  # 204 No Content is common for DELETE
-#                 )
-#             else:
-#                 return Response(
-#                     {"message": "No objects to delete."},
-#                     status=status.HTTP_204_NO_CONTENT,  # Or 404 Not Found if you expect objects to exist
-#                 )
-
-#         except Exception as e:  # Handle potential errors
-#             return Response(
-#                 {"error": str(e)},  # Log the error for debugging!
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             )
-from django.apps import apps
-from rest_framework.views import APIView
-
-
-class ModelManagementView(APIView):
-    def get(self, request):
-        model_names = []
-        for app_config in apps.get_app_configs():
-            for model in app_config.get_models():
-                model_names.append(model._meta.model_name)
-        return Response({"models": model_names})
-
-    def delete(self, request):
-        try:
-            app_label = request.data.get('app_label')  
-            model_name = request.data.get('model_name')
-            if not app_label or not model_name:
-                return Response(
-                    {"error": "Both 'app_label' and 'model_name' are required."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            try:
-                model = apps.get_model(app_label, model_name)
-            except LookupError:
-                return Response(
-                    {"error": f"Model '{model_name}' not found in app '{app_label}'."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            deleted_count = model.objects.all().delete()
-
-            if deleted_count[0] > 0:
-                return Response(
-                    {"message": f"{deleted_count[0]} objects from {model_name} deleted successfully."},
-                    status=status.HTTP_204_NO_CONTENT,
-                )
-            else:
-                return Response(
-                    {"message": f"No objects found to delete in {model_name}."},
-                    status=status.HTTP_204_NO_CONTENT,
-                )
-
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-
 
 
 
@@ -499,13 +378,13 @@ class PasswordResetConfirmView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class LogoutUserView(GenericAPIView):
-#     serializer_class=LogoutUserSerializer
-#     permission_LogoutUserViewclasses=[IsAuthenticated]
+class LogoutUserView(GenericAPIView):
+    serializer_class=LogoutUserSerializer
+    permission_LogoutUserViewclasses=[IsAuthenticated]
 
 
-#     def post(self,request):
-#         serializer=self.serializer_class(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+    def post(self,request):
+        serializer=self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

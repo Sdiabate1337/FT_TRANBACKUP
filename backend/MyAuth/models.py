@@ -22,7 +22,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     otp_secret = models.CharField(max_length=32, blank=True, null=True)
     is_2fa_enabled = models.BooleanField(default=False)
     # profile_image = models.ImageField(upload_to='usr_images/', null=True, blank=True)
-    image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+    image = models.ImageField(upload_to='profile_images/', default='profile_images/default.png',blank=True, null=True)
 
     is_admin = models.BooleanField(default=False) 
     is_staff = models.BooleanField(default=False)
