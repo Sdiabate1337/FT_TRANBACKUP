@@ -26,8 +26,8 @@ class JWTAuthMiddleware(BaseMiddleware):
                 user = await asyncio.to_thread(User.objects.get, id=user_id)
                 scope["user"] = user
             except User.DoesNotExist:
-                print("User not found")
+                #print("User not found")
             except Exception as e:
-                print(f"JWT Authentication failed: {e}")
+                #print(f"JWT Authentication failed: {e}")
 
         return await super().__call__(scope, receive, send)

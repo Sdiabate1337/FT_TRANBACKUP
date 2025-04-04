@@ -170,21 +170,21 @@ class ReceiveFriendRequestListView(APIView):
     def get(self, request):
         try:
             user = request.user
-            print(user.id)
+          #  #print(user.id)
             incoming_requests = FriendshipRequest.objects.filter(to_user_id=user.id)
-            print(list(incoming_requests))
+           # #print(list(incoming_requests))
             paginator = self.pagination_class()
-            print("paginator: ",paginator)
+           # #print("paginator: ",paginator)
             paginated_requests = paginator.paginate_queryset(incoming_requests, request)
 
-            print(f"Paginated Requests: {paginated_requests}")
+           # #print(f"Paginated Requests: {paginated_requests}")
             if not paginated_requests:
                 return Response(
                     {"message": "No incoming friend requests found."},
                     status=status.HTTP_200_OK
                 )
 
-            print("incoming request" ,incoming_requests)
+            #print("incoming request" ,incoming_requests)
             requests_data = []
             requests_data = [
                 {
@@ -237,16 +237,16 @@ class RemoveFriend(APIView):
         try:
             try:
                 friend_id = int(friend_id)
-                print(friend_id)
+                #print(friend_id)
             except ValueError:
                 return Response(
                     {"error": "Invalid friend ID. Please provide a valid integer."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             try:
-                print("i ma here 1")
+                #print("i ma here 1")
                 other_user = get_object_or_404(User, id=friend_id)
-                print("i ma here 2 ", other_user.username)
+                #print("i ma here 2 ", other_user.username)
             except Http404:
                     return Response(
                         {"error": "User not found."},
@@ -259,7 +259,7 @@ class RemoveFriend(APIView):
                 status=status.HTTP_200_OK
             )
             else:
-                print("i ma here")
+                #print("i ma here")
                 return Response(
                     {"error": "You are not friends with this user."},
                     status=status.HTTP_400_BAD_REQUEST
@@ -276,16 +276,16 @@ class RespondFriendRequestView(APIView):
     def post(self, request):
         try:
             requestID = request.data.get('requestID')
-            print("request ID" ,requestID )
+            #print("request ID" ,requestID )
             action = request.data.get('action')
-            print("action " ,action)
+            #print("action " ,action)
             if not requestID or not action:
                 return Response({"error": "requestID or action is required"}, status=status.HTTP_400_BAD_REQUEST)
             if action not in ["accept", "reject"]:
                 return Response({"error": "Invalid action. Must be 'accept' or 'reject'"}, status=status.HTTP_400_BAD_REQUEST)
             try:
                 friendRequest = FriendshipRequest.objects.get(pk=requestID)
-                print("friendRequest ",friendRequest)
+                #print("friendRequest ",friendRequest)
             except FriendshipRequest.DoesNotExist:
                 return Response({"error": "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
             if friendRequest.to_user != request.user:
@@ -297,8 +297,8 @@ class RespondFriendRequestView(APIView):
                     )
 
                 friendRequest.delete()
-                print("i m here")
-                print("friend1", friend1)
+                #print("i m here")
+                #print("friend1", friend1)
                 return Response({"message": "Friend request accepted"}, status=status.HTTP_200_OK)
             elif action == "reject":
                 friendRequest.delete()
@@ -317,7 +317,7 @@ class FriendStatus(APIView):
         if not check_user and not user:
             return Response({"error:": "User not found"},status = 400)
         status = Friend.objects.are_friends(user, check_user)
-        print(status)
+        #print(status)
         if status ==  True:
             return Response({"status:":"friend"},status = 200)
         status =   FriendshipRequest.objects.filter(

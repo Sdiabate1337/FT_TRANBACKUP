@@ -45,7 +45,7 @@ class RegisterUserView(GenericAPIView):
         if serializer.is_valid():
             
             user = serializer.save()
-            print("email:" ,user_data['email'] )
+            #print("email:" ,user_data['email'] )
             send_code_to_user(user_data['email'],user)
             return Response({
                 'data':user_data,
@@ -107,10 +107,10 @@ class VerifyView(GenericAPIView):
     serializer_class = OTPSerializer
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
-        print("Request Data:", request.data)
+        #print("Request Data:", request.data)
         if serializer.is_valid():
             id = cache.get(request.data.get("temp_token"))
-            print("id ", id)
+            #print("id ", id)
             user =User.objects.get(id=id)
             user_tokens = user.tokens()
             return Response({
@@ -211,7 +211,7 @@ class Enable2FAView(GenericAPIView):
 
             otp_uri = generate_otp_uri(user)
             qr_code = generate_qr_code(otp_uri)
-            print(qr_code)
+            #print(qr_code)
 
             return Response({
                 "message": "2FA enabled",
@@ -252,12 +252,12 @@ class Disable2FAView(GenericAPIView):
 # class debugView(GenericAPIView):
 #     def get(self,request):
 #         user = request.user
-#         print(user)
-#         print(request)
+#         #print(user)
+#         #print(request)
 #         if (User.is_authenticated):
-#             print (True)
+#             #print (True)
 #         else:
-#             print(False)
+#             #print(False)
 #         return Response({"hello":"hello"},status=status.HTTP_200_OK)
 class   _42Redirect(GenericAPIView):
 
@@ -303,9 +303,9 @@ class CollectAuthorizeCode(GenericAPIView):
         }
 
         response = requests.get(user_url, headers=headers)
-        print("----------------------")
-        print(response.text)
-        print("----------------------")
+        #print("----------------------")
+        #print(response.text)
+        #print("----------------------")
         if response.status_code == 200:
             user_data = response.json()
             email = user_data.get("email")
@@ -323,7 +323,7 @@ class CollectAuthorizeCode(GenericAPIView):
                 if image and image.get("link"):
                     user.download_profile_image_from_url(image["link"])
                 user.save()
-                print(user)
+                #print(user)
                 return Response({"access_token": access_token,"refresh_token":refresh_token}, status=status.HTTP_200_OK)
             else:
                 if usr1.is_2fa_enabled:
@@ -340,10 +340,10 @@ class CollectAuthorizeCode(GenericAPIView):
 class DeleteUser(GenericAPIView):
     def post(self ,request):
         id = request.data.get("id")
-        print(id)
+        #print(id)
         user = User.objects.get(id = id)
         user.delete()
-        print(user)
+        #print(user)
         return Response({"shrug":"shrug"})
 
 class PasswordResetRequestView(APIView):

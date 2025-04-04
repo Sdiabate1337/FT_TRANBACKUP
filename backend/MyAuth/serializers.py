@@ -53,15 +53,15 @@ class OTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6, required=True)
     temp_token = serializers.CharField(required=True)
     def validate(self, attrs):
-        print("Received data:", attrs) 
+        #print("Received data:", attrs) 
         oo = attrs.get("otp")
         temp_token = attrs.get("temp_token")
-        print(oo," -- ",temp_token)
+        #print(oo," -- ",temp_token)
         user_id = cache.get(temp_token)
         user = User.objects.get(id=user_id)
         if not verify_otp(user, oo):
             raise serializers.ValidationError({"error": "The OTP is not valid"})   
-        print(type(attrs))
+        #print(type(attrs))
         return attrs
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -80,9 +80,9 @@ class LoginSerializer(serializers.ModelSerializer):
         if not email or not password:
             raise serializers.ValidationError("Email and password are required.")
         try:
-            print("email " , email)
+            #print("email " , email)
             email1 = User.objects.get(email=email).email
-            print("email " , email1)
+            #print("email " , email1)
             password_saved = User.objects.get(email=email).password
         except:
                 raise serializers.ValidationError("No user found with this email.")
