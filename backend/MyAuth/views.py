@@ -4,7 +4,7 @@ import requests
 
 from backend import settings# type: ignore
 from .serializers import UserRegisterSerializer,LoginSerializer,PasswordResetRequestSerializer\
-                            ,SetNewPasswordSerializer,LogoutUserSerializer,OTPSerializer
+                            ,OTPSerializer,LogoutUserSerializer
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 from .utils import send_code_to_user
@@ -17,7 +17,12 @@ from django.utils.encoding import smart_str,DjangoUnicodeDecodeError# type: igno
 from django.contrib.auth.tokens import PasswordResetTokenGenerator# type: ignore
 from django.core.cache import cache
 from urllib.parse import quote
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.urls import reverse
+from .serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import serializers
 from .utils import generate_otp_secret, generate_otp_uri,verify_otp ,generate_qr_code
@@ -40,7 +45,7 @@ class RegisterUserView(GenericAPIView):
         if serializer.is_valid():
             
             user = serializer.save()
-            print("email:" ,user_data['email'] )
+            #print("email:" ,user_data['email'] )
             send_code_to_user(user_data['email'],user)
             return Response({
                 'data':user_data,
@@ -102,10 +107,10 @@ class VerifyView(GenericAPIView):
     serializer_class = OTPSerializer
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
-        print("Request Data:", request.data)
+        #print("Request Data:", request.data)
         if serializer.is_valid():
             id = cache.get(request.data.get("temp_token"))
-            print("id ", id)
+            #print("id ", id)
             user =User.objects.get(id=id)
             user_tokens = user.tokens()
             return Response({
@@ -206,7 +211,7 @@ class Enable2FAView(GenericAPIView):
 
             otp_uri = generate_otp_uri(user)
             qr_code = generate_qr_code(otp_uri)
-            print(qr_code)
+            #print(qr_code)
 
             return Response({
                 "message": "2FA enabled",
@@ -233,26 +238,26 @@ class Disable2FAView(GenericAPIView):
             }, status=status.HTTP_200_OK)
         return Response({"message": "2FA is not being disabled successfully."}, status=status.HTTP_200_OK)
 
-class TestAuthenticationView(GenericAPIView):
-    permission_classes = [IsAuthenticated]
+# class TestAuthenticationView(GenericAPIView):
+#     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
-        data={
-            'msg':'its works'
-        }
-        return Response(data, status=status.HTTP_200_OK)
+#     def get(self,request):
+#         data={
+#             'msg':'its works'
+#         }
+#         return Response(data, status=status.HTTP_200_OK)
 
 
 
 # class debugView(GenericAPIView):
 #     def get(self,request):
 #         user = request.user
-#         print(user)
-#         print(request)
+#         #print(user)
+#         #print(request)
 #         if (User.is_authenticated):
-#             print (True)
+#             #print (True)
 #         else:
-#             print(False)
+#             #print(False)
 #         return Response({"hello":"hello"},status=status.HTTP_200_OK)
 class   _42Redirect(GenericAPIView):
 
@@ -298,9 +303,9 @@ class CollectAuthorizeCode(GenericAPIView):
         }
 
         response = requests.get(user_url, headers=headers)
-        print("----------------------")
-        print(response.text)
-        print("----------------------")
+        #print("----------------------")
+        #print(response.text)
+        #print("----------------------")
         if response.status_code == 200:
             user_data = response.json()
             email = user_data.get("email")
@@ -318,7 +323,7 @@ class CollectAuthorizeCode(GenericAPIView):
                 if image and image.get("link"):
                     user.download_profile_image_from_url(image["link"])
                 user.save()
-                print(user)
+                #print(user)
                 return Response({"access_token": access_token,"refresh_token":refresh_token}, status=status.HTTP_200_OK)
             else:
                 if usr1.is_2fa_enabled:
@@ -335,168 +340,47 @@ class CollectAuthorizeCode(GenericAPIView):
 class DeleteUser(GenericAPIView):
     def post(self ,request):
         id = request.data.get("id")
-        print(id)
+        #print(id)
         user = User.objects.get(id = id)
         user.delete()
-        print(user)
+        #print(user)
         return Response({"shrug":"shrug"})
-    
-    
-def testJs(request):
-    return render(request,"x.html")
 
-### ------------------------------- friends api -------------------------
-
-
-
-# list users by names
-# from django.core.paginator import Paginator
-# class SearchUser(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         search_query = request.query_params.get("search", "").strip()
-
-#         if not search_query:
-#             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         users = User.objects.filter(name__unaccent__icontains=search_query).values("id", "username")
-
-#         if not users:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Pagination
-#         paginator = Paginator(users, 10)  # 10 users per page
-#         page = request.query_params.get("page", 1)
-#         paginated_users = paginator.get_page(page)
-
-#         return Response({
-#             "results": list(paginated_users),
-#             "pagination": {
-#                 "current_page": paginated_users.number,
-#                 "total_pages": paginator.num_pages,
-#                 "total_results": paginator.count
-#             }
-#         }, status=status.HTTP_200_OK)
-
-# GET /api/friends/status/{user_id}/ → Check friendship status
-# (friends | pending_request | not_friends | blocked).
-
-
-
-# class ModelListView(APIView):
-#     def get(self, request):
-#         model_names = []
-#         for app_config in apps.get_app_configs():
-#             for model in app_config.get_models():
-#                 model_names.append(model._meta.model_name)
-#         return Response({"models": model_names})
-# class MyModelDeleteAllView(APIView):
-#     def delete(self, request, format=None):
-#         try:
-#             deleted_count = User.objects.all().delete()
-
-#             if deleted_count[0] > 0: # Check if any objects were actually deleted
-#                 return Response(
-#                     {"message": f"{deleted_count[0]} objects deleted successfully."},
-#                     status=status.HTTP_204_NO_CONTENT,  # 204 No Content is common for DELETE
-#                 )
-#             else:
-#                 return Response(
-#                     {"message": "No objects to delete."},
-#                     status=status.HTTP_204_NO_CONTENT,  # Or 404 Not Found if you expect objects to exist
-#                 )
-
-#         except Exception as e:  # Handle potential errors
-#             return Response(
-#                 {"error": str(e)},  # Log the error for debugging!
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             )
-from django.apps import apps
-from rest_framework.views import APIView
-
-
-class ModelManagementView(APIView):
-    def get(self, request):
-        model_names = []
-        for app_config in apps.get_app_configs():
-            for model in app_config.get_models():
-                model_names.append(model._meta.model_name)
-        return Response({"models": model_names})
-
-    def delete(self, request):
-        try:
-            app_label = request.data.get('app_label')  
-            model_name = request.data.get('model_name')
-            if not app_label or not model_name:
-                return Response(
-                    {"error": "Both 'app_label' and 'model_name' are required."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            try:
-                model = apps.get_model(app_label, model_name)
-            except LookupError:
-                return Response(
-                    {"error": f"Model '{model_name}' not found in app '{app_label}'."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            deleted_count = model.objects.all().delete()
-
-            if deleted_count[0] > 0:
-                return Response(
-                    {"message": f"{deleted_count[0]} objects from {model_name} deleted successfully."},
-                    status=status.HTTP_204_NO_CONTENT,
-                )
-            else:
-                return Response(
-                    {"message": f"No objects found to delete in {model_name}."},
-                    status=status.HTTP_204_NO_CONTENT,
-                )
-
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+class PasswordResetRequestView(APIView):
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            uid, token = serializer.save()
+            reset_url = request.build_absolute_uri(
+                reverse('password-reset-confirm', kwargs={'uid': uid, 'token': token})
             )
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_url}',
+                'noreply@example.com',
+                [serializer.validated_data['email']],
+                fail_silently=False,
+            )
+            return Response({"detail": "Password reset email sent."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetConfirmView(APIView):
+    def post(self, request, uid, token):
+        data = {'uid': uid, 'token': token, 'new_password': request.data.get('new_password')}
+        serializer = PasswordResetConfirmSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# --------- user management ----------------
-# class  PasswordResetRequestView(GenericAPIView):
-#     serializer_class=PasswordResetRequestSerializer
-#     def post(self, request):
-#         serializer= self.serializer_class(data=request.data, context={'request':request})
-#         serializer.is_valid(raise_exception=True)
-#         return Response({'message':"a link has been sent to  your email to reset your password"},status=status.HTTP_200_OK)
-
-# class PasswordResetConfirm(GenericAPIView):
-#     def get(self,request,uidb64,token):
-#         try:
-#             user_id=smart_str(urlsafe_base64_decode(uidb64))
-#             user=User.objects.get(id=user_id)
-#             if not PasswordResetTokenGenerator().check_token(user,token):
-#                 return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-#             return Response({'success':True,'message':'credentials is valid','uidb64':uidb64,'token':token},status=status.HTTP_200_OK)
-#         except DjangoUnicodeDecodeError:
-#             return Response({'message':'token is invalid or has expired'},status=status.HTTP_401_UNAUTHORIZED)
-    
-
-# class SetNewPassword(GenericAPIView):
-#     serializer_class=SetNewPasswordSerializer
-#     def patch(self,request):
-#         serializer=self.serializer_class(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         return Response({'message':'password reset successful'},status=status.HTTP_200_OK)
-    
-
-# class LogoutUserView(GenericAPIView):
-#     serializer_class=LogoutUserSerializer
-#     permission_LogoutUserViewclasses=[IsAuthenticated]
+class LogoutUserView(GenericAPIView):
+    serializer_class=LogoutUserSerializer
+    permission_LogoutUserViewclasses=[IsAuthenticated]
 
 
-#     def post(self,request):
-#         serializer=self.serializer_class(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+    def post(self,request):
+        serializer=self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

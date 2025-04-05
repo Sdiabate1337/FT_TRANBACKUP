@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 # add this
 import os
+from decouple import config
 
 
 # Define the base directory
@@ -67,11 +68,19 @@ INSTALLED_APPS = [
     'MyAuth',
     'friends',
     'channels',
-    'onlineStatus'
-
+    'onlineStatus',
+    'userManagement',
 ]
 
 
+
+
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, "backend/game/static"),  # Correct path to game/static directory
+# ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
@@ -127,7 +136,10 @@ AUTH_USER_MODEL="MyAuth.User"
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+        
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,  
 }
 
 
@@ -184,14 +196,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ASGI_APPLICATION = 'backend.asgi.application'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  
-EMAIL_PORT = 587  
-EMAIL_USE_TLS = True  
-EMAIL_HOST_USER = 'nabilbaghoughi3@gmail.com'   
-EMAIL_HOST_PASSWORD = 'nzeuoddslhkfuizk'   
-DEFAULT_FROM_EMAIL = 'transcendence' 
-
-API42_UID="u-s4t2ud-3dc82a72862f5b978e57d6ebfb8a1e5b1a546f4abc98c31c8ee49b03643ee977"
-API42_SECRET="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"
-API42_REDIRECT_URI="http://127.0.0.1:8000/v1/MyAuth/2OAuth"
+EMAIL_BACKEND = config('EMAIL_BACKEND')
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+PI42_UID = config('API42_UID')
+API42_SECRET = config('API42_SECRET')
+API42_REDIRECT_URI = config('API42_REDIRECT_URI')

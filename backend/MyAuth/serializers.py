@@ -5,18 +5,24 @@ from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
-from django.utils.encoding import smart_str,smart_bytes,force_str
+from django.utils.encoding import smart_str,force_str
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
 from .utils import send_normal_email
 from rest_framework_simplejwt.tokens import RefreshToken ,Token
 from rest_framework_simplejwt.exceptions import TokenError
-# from django.contrib.auth.models import User
 from .utils import verify_otp
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 import uuid
 from django.core.cache import cache
 
 from django.contrib.auth.hashers import make_password, check_password
+
+User = get_user_model()
 
 # test this fucking register api
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -47,15 +53,15 @@ class OTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6, required=True)
     temp_token = serializers.CharField(required=True)
     def validate(self, attrs):
-        print("Received data:", attrs) 
+        #print("Received data:", attrs) 
         oo = attrs.get("otp")
         temp_token = attrs.get("temp_token")
-        print(oo," -- ",temp_token)
+        #print(oo," -- ",temp_token)
         user_id = cache.get(temp_token)
         user = User.objects.get(id=user_id)
         if not verify_otp(user, oo):
             raise serializers.ValidationError({"error": "The OTP is not valid"})   
-        print(type(attrs))
+        #print(type(attrs))
         return attrs
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -74,9 +80,9 @@ class LoginSerializer(serializers.ModelSerializer):
         if not email or not password:
             raise serializers.ValidationError("Email and password are required.")
         try:
-            print("email " , email)
+            #print("email " , email)
             email1 = User.objects.get(email=email).email
-            print("email " , email1)
+            #print("email " , email1)
             password_saved = User.objects.get(email=email).password
         except:
                 raise serializers.ValidationError("No user found with this email.")
@@ -100,57 +106,49 @@ class LoginSerializer(serializers.ModelSerializer):
             'refresh_token':str(user_tokens.get('refresh'))
         }
 
+
+
+
 class PasswordResetRequestSerializer(serializers.Serializer):
-    email=serializers.EmailField(max_length=255)
+    email = serializers.EmailField()
 
-    class Meta:
-        fields=['email']   
-
-    def validate(self, attrs):
-        email = attrs.get('email')
-        if  User.objects.filter(email=email).exists():
-            user=User.objects.get(email=email)
-            uidb64=urlsafe_base64_encode(smart_bytes(user.id))
-            token=PasswordResetTokenGenerator().make_token(user)
-            request=self.context.get('request')
-            site_domain=get_current_site(request).domain
-            relative_link = reverse('password-reset-confirm',kwargs={'uidb64':uidb64,'token':token})
-            abslink= f"http://{site_domain}{relative_link}"
-            email_body= f"Hi use the link below to reset your password \n {abslink}"
-            data={
-                'email_body': email_body,
-                'email_subject':"Reset your Password",
-                'to_email':user.email
-            }
-            send_normal_email(data)
-        return super().validate(attrs)
-class SetNewPasswordSerializer(serializers.Serializer):
-    password=serializers.CharField(max_length=68,min_length=6, write_only=True)
-    confirm_password=serializers.CharField(max_length=68,min_length=6, write_only=True)
-    uidb64=serializers.CharField(write_only=True)
-    token=serializers.CharField(write_only=True)
-
-
-    class Meta:
-        fields = ["password","confirm_password","uidb64","token"]
-    def validate(self, attrs):
+    def validate_email(self, value):
         try:
-            token=attrs.get('token')
-            uidb64=attrs.get('uidb64')
-            password=attrs.get('password')
-            confirm_password=attrs.get('confirm_password')
-            user_id = force_str(urlsafe_base64_decode(uidb64))
-            user=User.objects.get(id=user_id)
-            if not PasswordResetTokenGenerator().check_token(user,token):
-                raise AuthenticationFailed("reset link is invalid or expired")
-            if password != confirm_password:
-                raise AuthenticationFailed("passwords do not match")
-            user.set_password(password)
-            user.save()
-            return user
-        except Exception as e:
-            return AuthenticationFailed("link is  invalid or has expired")
-        
+            self.user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+        return value
+
+    def save(self):
+        user = self.user
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        return uid, token
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        try:
+            uid = force_str(urlsafe_base64_decode(data['uid']))
+            user = User.objects.get(pk=uid, is_active=True)
+        except (User.DoesNotExist, ValueError, TypeError):
+            raise serializers.ValidationError("Invalid user or token.")
+
+        if not default_token_generator.check_token(user, data['token']):
+            raise serializers.ValidationError("Invalid token.")
+
+        self.user = user
+        return data
+
+    def save(self):
+        user = self.user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+
 class LogoutUserSerializer(serializers.Serializer):
     refresh_token=serializers.CharField()
 
@@ -170,10 +168,6 @@ class LogoutUserSerializer(serializers.Serializer):
             return self.fail('bad_token')
 
 
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()

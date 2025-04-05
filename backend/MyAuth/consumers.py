@@ -3,8 +3,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
+from asgiref.sync import sync_to_async
 
-from friendship.models import Friend ,FriendshipRequest,Block
+from friendship.models import Friend
 
 class OnlineStatusConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -12,7 +13,7 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
 
         self.user = self.scope["user"]
         if self.user.is_authenticated:
-            print("im here 1")
+            #print("im here 1")
             await self.set_user_online(self.user.id) 
             await self.channel_layer.group_add(f"user_{self.user.id}", self.channel_name)
             await self.notify_friends_online_status(self.user.id, "online")
@@ -20,20 +21,33 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
         await self.accept()
         await self.send_friends_status()
 
+    @database_sync_to_async
+    def get_active_connections(self, user_id):
+        return self.channel_layer.group_channels(f"user_{user_id}")
+
+
     async def disconnect(self, close_code):
-        """When a user disconnects, mark them as offline."""
+        """Handle disconnection: Only mark user offline if no connections remain."""
         if self.user.is_authenticated:
-            await self.set_user_offline(self.user.id)
             await self.channel_layer.group_discard(f"user_{self.user.id}", self.channel_name)
-            await self.notify_friends_online_status(self.user.id, "offline")
+
+            remaining_connections = await self.count_active_connections(self.user.id)
+            if remaining_connections == 0:
+                await self.set_user_offline(self.user.id)
+                await self.notify_friends_online_status(self.user.id, "offline")
+
+    @sync_to_async
+    def count_active_connections(self, user_id):
+        """Count the number of active WebSocket connections for a user."""
+        return len(self.channel_layer.groups.get(f"user_{user_id}", set()))
 
     async def notify_friends_online_status(self, user_id, status):
         """Notify friends about the user's online status."""
-        print(f"Sending {status} status for user {user_id} to friends.")
+        #print(f"Sending {status} status for user {user_id} to friends.")
         friends = await self.get_friends(user_id)
-        print(friends)
+        #print(friends)
         for friend in friends:
-            print("notify friend",friend.id)
+            #print("notify friend",friend.id)
             await self.channel_layer.group_send(
             f"user_{friend.id}",
                 {"type": "user_status", "user_id": user_id, "status": status}
@@ -41,16 +55,14 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
     async def send_friends_status(self):
         friends = await self.get_friends(self.user)
         for friend in friends:
-            # Check if the friend is online (you need to implement this logic)
             is_online =  self.is_user_online(friend)
             await self.send(text_data=json.dumps({
                 'type': 'friend_status',
-                'user_id': friend.id,
-                'username': friend.first_name,
+                'friend.id': friend.id,
+                'username': friend.username,
                 'is_online': is_online,
             }))
     def is_user_online(self, user):
-        #User = get_user_model() 
         return user.is_online
 
     async def user_status(self, event):
@@ -91,7 +103,7 @@ class OnlineStatusConsumer(AsyncWebsocketConsumer):
         text_data_json = json.loads(text_data)
         user_id = text_data_json["user_id"]
         status = text_data_json["status"]
-        print(f"Received status: {status} for user {user_id}")
+        #print(f"Received status: {status} for user {user_id}")
         await self.send(text_data=json.dumps({
             "user_id": user_id,
             "status": status,
@@ -102,28 +114,25 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
         if self.user.is_anonymous:
-            await self.close()  # Reject unauthenticated users
+            await self.close()  
         else:
-            # Add the user to their personal notification group
             await self.channel_layer.group_add(
-                f"notifications_{self.user.id}",  # Group name (e.g., notifications_1)
-                self.channel_name  # Unique channel name for this WebSocket connection
+                f"notifications_{self.user.id}",   
+                self.channel_name  
             )
-            await self.accept()  # Accept the WebSocket connection
+            await self.accept()  
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user') and not self.user.is_anonymous:
-            # Remove the user from their notification group
             await self.channel_layer.group_discard(
                 f"notifications_{self.user.id}",
                 self.channel_name
             )
 
     async def send_notification(self, event):
-        # Send the notification to the user
         await self.send(text_data=json.dumps({
-            'type': 'friend_request',  # Type of notification
-            'from_user_id': event['from_user_id'],  # ID of the sender
-            'from_user_username': event['from_user_username'],  # Username of the sender
-            'message': event['message'],  # Notification message
+            'type': 'friend_request', 
+            'from_user_id': event['from_user_id'],   
+            'from_user_username': event['from_user_username'], 
+            'message': event['message'],   
         }))
