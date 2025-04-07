@@ -144,7 +144,23 @@ export function createLoginForm(container, options = {}) {
     
     // Connexion avec 42
     loginWith42Btn.addEventListener('click', () => {
-        loginWith42();
+        // Masquer le formulaire et afficher un message d'attente
+        const formContent = container.querySelector('.cyber-form');
+        if (formContent) {
+            formContent.style.opacity = "0.5";
+            formContent.style.pointerEvents = "none";
+            
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'position-absolute top-50 start-50 translate-middle text-center';
+            loadingMsg.innerHTML = `
+                <div class="loading-spinner mb-3"></div>
+                <p>Redirection vers l'authentification 42...</p>
+            `;
+            container.appendChild(loadingMsg);
+        }
+        
+        // Redirection vers l'authentification 42
+        apiOAuth42Redirect();
     });
     
     // Liens de navigation

@@ -272,6 +272,248 @@ class CollectAuthorizeCode(GenericAPIView):
     renderer_classes = [JSONRenderer]
 
     def get(self, request):
+        import urllib.parse
+        
+        # Logs de débogage
+        print(f"DEBUG - API42_UID: {settings.API42_UID}")
+        print(f"DEBUG - REDIRECT_URI: {settings.API42_REDIRECT_URI}")
+        
+        code = request.GET.get("code")
+        state = request.GET.get("state")
+        print(f"DEBUG - Received code: {code} and state: {state}")
+        
+        if not code:
+            return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_url = "https://api.intra.42.fr/oauth/token"
+        
+        # Données encodées correctement pour la requête
+        payload = {
+            "grant_type": "authorization_code",
+            "client_id": settings.API42_UID,
+            "client_secret": settings.API42_SECRET,
+            "code": code,
+            "redirect_uri": settings.API42_REDIRECT_URI,
+        }
+        
+        # Headers nécessaires
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json"
+        }
+        
+        try:
+            print(f"DEBUG - Sending token request to {token_url}")
+            response = requests.post(token_url, data=payload, headers=headers)
+            print(f"DEBUG - Token response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"DEBUG - Error response content: {response.text}")
+                return Response({"error": f"Token request failed with status {response.status_code}", 
+                               "details": response.text}, status=status.HTTP_400_BAD_REQUEST)
+            
+            token_data = response.json()
+            access_token = token_data.get("access_token")
+            refresh_token = token_data.get("refresh_token")
+            
+            if not access_token:
+                return Response({"error": "Access token not found in response"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user_url = "https://api.intra.42.fr/v2/me"
+            user_headers = {"Authorization": f"Bearer {access_token}"}
+            
+            user_response = requests.get(user_url, headers=user_headers)
+            print(f"DEBUG - User API response: {user_response.status_code}")
+            
+            if user_response.status_code == 200:
+                user_data = user_response.json()
+                email = user_data.get("email")
+                usr1 = None
+                
+                if User.objects.filter(email=email).exists():
+                    usr1 = User.objects.get(email=email)
+                    
+                if not usr1:
+                    # Créer un nouvel utilisateur
+                    user = User.objects.create_user(
+                        email=user_data.get("email"),
+                        first_name=user_data.get("first_name"),
+                        last_name=user_data.get("last_name"),
+                    )
+                    image = user_data.get("image")
+                    if image and image.get("link"):
+                        user.download_profile_image_from_url(image["link"])
+                    user.save()
+                    return Response({"access_token": access_token, "refresh_token": refresh_token}, status=status.HTTP_200_OK)
+                else:
+                    # Utilisateur existant
+                    if usr1.is_2fa_enabled:
+                        temp_token = str(uuid.uuid4()) 
+                        cache.set(temp_token, usr1.id, timeout=10000)
+                        return Response({"detail": "2FA required", "temp_token": temp_token},
+                                     status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({"access_token": access_token, "refresh_token": refresh_token}, status=status.HTTP_200_OK)
+            else:
+                error_message = f"Failed to fetch user data: {user_response.status_code}"
+                print(f"DEBUG - {error_message}: {user_response.text}")
+                return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except requests.exceptions.RequestException as e:
+            print(f"DEBUG - Token request error: {str(e)}")
+            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as error:
+            print(f"DEBUG - Unexpected error: {str(error)}")
+            return Response({"error": "Failed to process authentication", "details": str(error)}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [AllowAny]
+    renderer_classes = [JSONRenderer]
+
+    def get(self, request):
+        import urllib.parse
+        
+        # Logs de débogage
+        print(f"DEBUG - API42_UID: {settings.API42_UID[:10]}...")
+        print(f"DEBUG - REDIRECT_URI: {settings.API42_REDIRECT_URI}")
+        
+        code = request.GET.get("code")
+        state = request.GET.get("state")
+        print(f"DEBUG - Received code: {code[:10]}... and state: {state}")
+        
+        if not code:
+            return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_url = "https://api.intra.42.fr/oauth/token"
+        
+        # Utilisation de urllib pour encoder correctement les données
+        data = urllib.parse.urlencode({
+            "grant_type": "authorization_code",
+            "client_id": settings.API42_UID,
+            "client_secret": settings.API42_SECRET,
+            "code": code,
+            "redirect_uri": settings.API42_REDIRECT_URI,
+        })
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json"
+        }
+        
+        try:
+            print("DEBUG - Sending token request...")
+            response = requests.post(token_url, data=data, headers=headers)
+            print(f"DEBUG - Token response status: {response.status_code}")
+            print(f"DEBUG - Token response content: {response.text[:200]}")
+            
+            response.raise_for_status()
+            
+            token_data = response.json()
+            access_token = token_data.get("access_token")
+            refresh_token = token_data.get("refresh_token")
+            
+            if not access_token:
+                return Response({"error": "Access token not found in response"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user_url = "https://api.intra.42.fr/v2/me"
+            user_headers = {"Authorization": f"Bearer {access_token}"}
+            
+            user_response = requests.get(user_url, headers=user_headers)
+            print(f"DEBUG - User API response: {user_response.status_code}")
+            
+            if user_response.status_code == 200:
+                user_data = user_response.json()
+                email = user_data.get("email")
+                usr1 = None
+                
+                if User.objects.filter(email=email).exists():
+                    usr1 = User.objects.get(email=email)
+                    
+                if not usr1:
+                    # Créer un nouvel utilisateur
+                    user = User.objects.create_user(
+                        email=user_data.get("email"),
+                        first_name=user_data.get("first_name"),
+                        last_name=user_data.get("last_name"),
+                    )
+                    image = user_data.get("image")
+                    if image and image.get("link"):
+                        user.download_profile_image_from_url(image["link"])
+                    user.save()
+                    return Response({"access_token": access_token, "refresh_token": refresh_token}, status=status.HTTP_200_OK)
+                else:
+                    # Utilisateur existant
+                    if usr1.is_2fa_enabled:
+                        temp_token = str(uuid.uuid4()) 
+                        cache.set(temp_token, usr1.id, timeout=10000)
+                        return Response({"detail": "2FA required", "temp_token": temp_token},
+                                     status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({"access_token": access_token, "refresh_token": refresh_token}, status=status.HTTP_200_OK)
+            else:
+                # Erreur lors de la récupération des données utilisateur
+                error_message = f"Failed to fetch user data: {user_response.status_code}"
+                return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except requests.exceptions.RequestException as e:
+            print(f"DEBUG - Token request error: {str(e)}")
+            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as error:
+            print(f"DEBUG - Unexpected error: {str(error)}")
+            return Response({"error": "Failed to process authentication", "details": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [AllowAny]
+    renderer_classes = [JSONRenderer]
+
+    def get(self, request):
+        # Ajout des logs de débogage
+        print(f"DEBUG - API42_UID: {settings.API42_UID[:10]}...")
+        print(f"DEBUG - REDIRECT_URI: {settings.API42_REDIRECT_URI}")
+        
+        code = request.GET.get("code")
+        if not code:
+            return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_url = "https://api.intra.42.fr/oauth/token"
+        data = {
+            "grant_type": "authorization_code",
+            "client_id": settings.API42_UID,
+            "client_secret": settings.API42_SECRET,
+            "code": code,
+            "redirect_uri": settings.API42_REDIRECT_URI,
+        }
+        
+        # Afficher les données envoyées (sans le secret)
+        debug_data = data.copy()
+        debug_data["client_secret"] = debug_data["client_secret"][:5] + "..."
+        print(f"DEBUG - Token request data: {debug_data}")
+        
+        try:
+            # Essayer sans les headers spécifiques pour voir si ça résout le problème
+            response = requests.post(token_url, data=data)
+            print(f"DEBUG - Token response status: {response.status_code}")
+            print(f"DEBUG - Token response content: {response.text[:200]}")
+            
+            response.raise_for_status()
+            
+            # Suite du code (inchangée)
+            access_token = response.json().get("access_token")
+            refresh_token = response.json().get("refresh_token")
+            if not access_token:
+                return Response({"error": "Access token not found in response"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Reste du code inchangé...
+        
+        except requests.exceptions.RequestException as e:
+            print(f"DEBUG - Token request error: {str(e)}")
+            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Correction de la référence à la variable 'e' non définie
+        except Exception as error:
+            print(f"DEBUG - Unexpected error: {str(error)}")
+            return Response({"error": "Failed to fetch user data", "details": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [AllowAny]
+    renderer_classes = [JSONRenderer]
+
+    def get(self, request):
         code = request.GET.get("code")
         if not code:
             return Response({"error": "No authorization code provided"}, status=status.HTTP_400_BAD_REQUEST)
@@ -290,7 +532,7 @@ class CollectAuthorizeCode(GenericAPIView):
             response = requests.post(token_url, data=data, headers=headers)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST0)
+            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         access_token = response.json().get("access_token")
         refresh_token = response.json().get("refresh_token")
         if not access_token:
@@ -333,9 +575,7 @@ class CollectAuthorizeCode(GenericAPIView):
                                     status=status.HTTP_401_UNAUTHORIZED,)
                 return Response({"access_token": access_token,"refresh_token":refresh_token}, status=status.HTTP_200_OK)
         else:
-            return Response(
-                {"error": "Failed to fetch user data."},
-                status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Failed to fetch access token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class DeleteUser(GenericAPIView):
     def post(self ,request):
